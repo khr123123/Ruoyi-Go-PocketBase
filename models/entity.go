@@ -33,7 +33,7 @@ type SysMenu struct {
 	MenuName   string  `json:"menuName" db:"menuName" gorm:"type:TEXT;not null;default:''"`
 	MenuType   string  `json:"menuType" db:"menuType" gorm:"type:TEXT;not null;default:''"`
 	OrderNum   *int    `json:"orderNum" db:"orderNum" gorm:"type:NUMERIC;default:null"`
-	ParentId   *string `json:"parentId" db:"parentId" gorm:"type:TEXT;default:null"`
+	ParentId   *string `json:"parentId" db:"parentId" gorm:"type:TEXT;default:0"`
 	Permission *string `json:"permission" db:"permission" gorm:"type:TEXT;default:null"`
 	URL        *string `json:"url" db:"url" gorm:"type:TEXT;default:null"`
 }

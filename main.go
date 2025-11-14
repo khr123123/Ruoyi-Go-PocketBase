@@ -95,7 +95,7 @@ func main() {
 
 // parseRoleIds 解析角色ID
 func parseRoleIds(roleIdsRaw any) []string {
-	roleIds := []string{}
+	var roleIds []string
 
 	switch v := roleIdsRaw.(type) {
 	case string:
