@@ -65,5 +65,22 @@ export async function deleteUser(id) {
     return await pb.collection("users").delete(id);
 }
 
+/**
+ * 获取用户列表带排序
+ * @param {number} page
+ * @param {number} perPage
+ * @param {string} sort
+ * @param {string} filter
+ */
+export async function listUser(page = 1, perPage = 20, sort = '-created', filter = '') {
+    return await pb.collection('users').getList(page, perPage, {
+        sort,       // 排序字段，例如："-created", "email", "name"
+        filter,     // PocketBase filter，例："email ~ 'gmail'"
+        fields: 'id,email,emailVisibility,verified,name,avatar,created,updated,role', //你要的字段
+        expand: 'role', //如果你想取角色表
+    });
+}
+
+
 // 导出 PocketBase 实例（可直接用）
 export {pb};

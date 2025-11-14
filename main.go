@@ -3,13 +3,14 @@ package main
 
 import (
 	"Ruoyi-Go-PocketBase/models"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
-	"log"
-	"net/http"
-	"os"
 )
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 		// e.Record
 		// and all RequestEvent fields...
 		return e.Next()
-	}) // fires for every collection
+	})
 	app.OnRecordDeleteRequest().BindFunc(func(e *core.RecordRequestEvent) error {
 		// e.App
 		// e.Collection
@@ -43,7 +44,6 @@ func main() {
 		// and all RequestEvent fields...
 		return e.Next()
 	})
-
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		// 获取用户权限菜单树
 		se.Router.GET("/api/getUserRouter", func(e *core.RequestEvent) error {
@@ -98,21 +98,21 @@ func HasPermission(user *models.User, required string, db *dbx.DB) bool {
 	if user == nil {
 		return false
 	}
-	// 1. 根据用户角色查出所有权限
+	// 根据用户角色查出所有权限
 	var roles []models.SysRole
 	roleIds := make([]interface{}, len(user.Role))
 	for i, r := range user.Role {
 		roleIds[i] = r
 	}
 	db.Select("*").From("sys_role").Where(dbx.In("id", roleIds...)).All(&roles)
-	// 2. 构建权限集合
+	// 构建权限集合
 	permissionSet := map[string]struct{}{}
 	for _, role := range roles {
 		for _, p := range role.Permission {
 			permissionSet[p] = struct{}{}
 		}
 	}
-	// 3. 判断
+	// 判断
 	_, ok := permissionSet[required]
 	return ok
 }
@@ -130,17 +130,14 @@ func (s *MenuService) GetUserMenuTree(roleIds []string) ([]*models.MenuVO, error
 	if len(roleIds) == 0 {
 		return []*models.MenuVO{}, nil
 	}
-
 	permissions, err := s.getPermissionsByRoleIds(roleIds)
 	if err != nil {
 		return nil, err
 	}
-
 	menus, err := s.getMenusByPermissions(permissions)
 	if err != nil {
 		return nil, err
 	}
-
 	menuVOs := makeMenuVOs(menus)
 	tree := s.buildMenuTree(menuVOs)
 	return tree, nil
@@ -159,24 +156,20 @@ func (s *MenuService) GetAllMenuTree() ([]*models.MenuVO, error) {
 // getPermissionsByRoleIds 根据角色ID获取权限集合
 func (s *MenuService) getPermissionsByRoleIds(roleIds []string) ([]string, error) {
 	roleIdsInterface := stringSliceToInterface(roleIds)
-
 	var roles []models.SysRole
 	if err := s.app.DB().Select("*").From("sys_role").Where(dbx.In("id", roleIdsInterface...)).All(&roles); err != nil {
 		return nil, err
 	}
-
 	permissionSet := map[string]struct{}{}
 	for _, r := range roles {
 		for _, p := range r.Permission {
 			permissionSet[p] = struct{}{}
 		}
 	}
-
 	permissions := make([]string, 0, len(permissionSet))
 	for p := range permissionSet {
 		permissions = append(permissions, p)
 	}
-
 	return permissions, nil
 }
 
@@ -185,7 +178,6 @@ func (s *MenuService) getMenusByPermissions(permissions []string) ([]models.SysM
 	if len(permissions) == 0 {
 		return []models.SysMenu{}, nil
 	}
-
 	permissionInterface := stringSliceToInterface(permissions)
 	var menus []models.SysMenu
 	if err := s.app.DB().
@@ -196,7 +188,6 @@ func (s *MenuService) getMenusByPermissions(permissions []string) ([]models.SysM
 		All(&menus); err != nil {
 		return nil, err
 	}
-
 	return menus, nil
 }
 
@@ -204,12 +195,10 @@ func (s *MenuService) getMenusByPermissions(permissions []string) ([]models.SysM
 func (s *MenuService) buildMenuTree(menus []*models.MenuVO) []*models.MenuVO {
 	menuMap := make(map[string]*models.MenuVO, len(menus))
 	var roots []*models.MenuVO
-
 	for _, menu := range menus {
 		menu.Children = []*models.MenuVO{}
 		menuMap[menu.ID] = menu
 	}
-
 	for _, menu := range menus {
 		if menu.ParentId == "" || menu.ParentId == "0" || menu.ParentId == "null" {
 			roots = append(roots, menu)
@@ -219,7 +208,6 @@ func (s *MenuService) buildMenuTree(menus []*models.MenuVO) []*models.MenuVO {
 			parent.Children = append(parent.Children, menu)
 		}
 	}
-
 	return roots
 }
 

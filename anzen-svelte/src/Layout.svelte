@@ -7,6 +7,8 @@
     import {clearUser, user} from './stores/userStore.js';
     import {logout} from "./api/userApis.js";
     import {showToast} from "./stores/toastStore.js";
+    import Menu from "./pages/Menu.svelte";
+    import Setting from "./pages/Setting.svelte";
 
     const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
@@ -14,7 +16,9 @@
     let searchQuery = '';
     const layoutRoutes = {
         '/': wrap({component: Home}),
-        '/about': wrap({component: About})
+        '/sys_menu': wrap({component: Menu}),
+        '/about': wrap({component: About}),
+        '/setting': wrap({component: Setting})
     }
     const handleLogout = () => {
         logout()
@@ -49,13 +53,13 @@
                     </span>
                     <span class="nav-text">users</span>
                 </a>
-                <a href="#/about" class="nav-item" class:active={isActive('/about')}>
+                <a href="#/sys_menu" class="nav-item" class:active={isActive('/sys_menu')}>
                     <span class="nav-icon">
                         <Chart size={20}/>
                     </span>
                     <span class="nav-text">sys_menu</span>
                 </a>
-                <a href="#/services" class="nav-item" class:active={isActive('/services')}>
+                <a href="#/about" class="nav-item" class:active={isActive('/about')}>
                     <span class="nav-icon">
                         <IdCard size={20}/>
                     </span>
@@ -64,7 +68,7 @@
             </div>
             <div class="nav-section">
                 <div class="section-label">System</div>
-                <a href="#/contact" class="nav-item" class:active={isActive('/contact')}>
+                <a href="#/setting" class="nav-item" class:active={isActive('/setting')}>
                     <span class="nav-icon">
                         <Settings size={20}/>
                     </span>
