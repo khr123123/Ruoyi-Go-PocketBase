@@ -19,7 +19,6 @@ func main() {
 		// e.Collection
 		// e.Record
 		// and all RequestEvent fields...
-
 		return e.Next()
 	})
 	app.OnRecordCreateRequest().BindFunc(func(e *core.RecordRequestEvent) error {
@@ -27,7 +26,6 @@ func main() {
 		// e.Collection
 		// e.Record
 		// and all RequestEvent fields...
-
 		return e.Next()
 	})
 	// fires for every collection

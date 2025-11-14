@@ -1,26 +1,38 @@
-<!-- pages/LoginPage.svelte -->
 <script>
-    import { push } from 'svelte-spa-router';
-    import { Logo, ArrowRight } from '../lib/icons';
+    import {ArrowRight, Logo} from '../lib/icons';
+    import {login} from "../api/userApis.js";
+    import {showToast} from '../stores/toastStore.js';
+    import {setUser} from "../stores/userStore.js";
+    import {push} from 'svelte-spa-router';
 
     let email = '';
     let password = '';
     let isLoading = false;
 
-    async function handleLogin() {
+    const handleLogin = async () => {
         isLoading = true;
-        setTimeout(() => {
+        try {
+            const res = await login(email, password);
+            setUser(res); // 存储核心用户信息
+            showToast('login success！', 'success');
+            setTimeout(() => {
+                isLoading = false
+                push('/')
+            }, 800);
+        } catch (e) {
+            console.log("login failed", e.message);
+            showToast("login failed！", "error");
             isLoading = false;
-            push('/');
-        }, 1000);
-    }
-</script>
+        }
 
+    }
+
+</script>
 <div class="login-container">
     <div class="login-box">
         <div class="logo-container">
-            <Logo size={48} />
-            <h1 class="logo-text">Pocket<span class="logo-bold">Base</span></h1>
+            <Logo size={48}/>
+            <h1 class="logo-text">RUOYI-<span class="logo-bold">PB</span></h1>
         </div>
         <h2 class="login-title">Superuser login</h2>
         <form on:submit|preventDefault={handleLogin} class="login-form">
@@ -52,7 +64,7 @@
             <button type="submit" class="login-button" disabled={isLoading}>
                 {isLoading ? 'Loading...' : 'Login'}
                 {#if !isLoading}
-                    <ArrowRight size={16} />
+                    <ArrowRight size={16}/>
                 {/if}
             </button>
         </form>
@@ -67,6 +79,7 @@
         background-color: #f7f7f7;
         padding: 20px;
     }
+
     .login-box {
         background: white;
         border-radius: 8px;
@@ -75,6 +88,7 @@
         max-width: 440px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
+
     .logo-container {
         display: flex;
         align-items: center;
@@ -82,12 +96,14 @@
         margin-bottom: 32px;
         gap: 12px;
     }
+
     .logo-text {
         font-size: 28px;
         font-weight: 400;
         color: #2b3034;
         margin: 0;
     }
+
     .logo-bold {
         font-weight: 700;
     }

@@ -1,28 +1,29 @@
-<!-- Layout.svelte -->
 <script>
     import Router, {location, push} from "svelte-spa-router";
     import {wrap} from 'svelte-spa-router/wrap';
     import Home from './pages/Home.svelte';
     import About from './pages/About.svelte';
-
-    // 导入图标
     import {Chart, IdCard, Logo, Refresh, Settings, SettingsAlt, Users} from './lib/icons';
+    import {clearUser, user} from './stores/userStore.js';
+    import {logout} from "./api/userApis.js";
+    import {showToast} from "./stores/toastStore.js";
+
+    const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
     let sidebarOpen = true;
     let searchQuery = '';
-
     const layoutRoutes = {
         '/': wrap({component: Home}),
         '/about': wrap({component: About})
     }
-
-    function handleLogout() {
-        push('/login');
+    const handleLogout = () => {
+        logout()
+        clearUser()
+        showToast("logout success !", "info")
+        setTimeout(() => push('/login'), 800)
     }
+    const isActive = (path) => $location === path;
 
-    function isActive(path) {
-        return $location === path;
-    }
 </script>
 
 <div class="layout">
@@ -40,7 +41,6 @@
                     bind:value={searchQuery}
             />
         </div>
-
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <a href="#/" class="nav-item" class:active={isActive('/')}>
@@ -49,14 +49,12 @@
                     </span>
                     <span class="nav-text">users</span>
                 </a>
-
                 <a href="#/about" class="nav-item" class:active={isActive('/about')}>
                     <span class="nav-icon">
                         <Chart size={20}/>
                     </span>
                     <span class="nav-text">sys_menu</span>
                 </a>
-
                 <a href="#/services" class="nav-item" class:active={isActive('/services')}>
                     <span class="nav-icon">
                         <IdCard size={20}/>
@@ -64,7 +62,6 @@
                     <span class="nav-text">sys_role</span>
                 </a>
             </div>
-
             <div class="nav-section">
                 <div class="section-label">System</div>
                 <a href="#/contact" class="nav-item" class:active={isActive('/contact')}>
@@ -75,15 +72,20 @@
                 </a>
             </div>
         </nav>
-
-        <div class="sidebar-footer">
-            <button class="new-collection-btn">
-                <span>+</span>
-                <span>New collection</span>
-            </button>
+        <div class="sidebar-footer p-3 border-t border-gray-200">
+            {#if $user && $user.id}
+                <div class="flex items-center gap-3 cursor-default">
+                    <!-- 头像 -->
+                    <div class="w-8 h-8 rounded-full overflow-hidden">
+                        <img src="{AVATAR_PREFIX+$user.id+'/'+$user.avatar}" alt="avatar"
+                             class="w-full h-full object-cover"/>
+                    </div>
+                    <!-- 用户名 -->
+                    <span class="text-sm font-medium text-gray-800">{$user.name}</span>
+                </div>
+            {/if}
         </div>
     </aside>
-
     <!-- Main Content -->
     <main class="main-content">
         <header class="content-header">
@@ -94,7 +96,6 @@
                     {$location === '/' ? 'users' : $location.slice(1)}
                 </span>
             </div>
-
             <div class="header-actions">
                 <button class="header-btn" title="Settings">
                     <SettingsAlt size={20}/>
@@ -107,13 +108,11 @@
                 </button>
             </div>
         </header>
-
         <div class="content-body">
             <Router routes={layoutRoutes}/>
         </div>
     </main>
 </div>
-
 
 <style>
     .layout {
