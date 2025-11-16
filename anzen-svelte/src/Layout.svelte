@@ -1,14 +1,17 @@
 <script>
     import Router, {location, push} from "svelte-spa-router";
     import {wrap} from 'svelte-spa-router/wrap';
-    import Home from './pages/Home.svelte';
+    import Home from './pages/UserPage.svelte';
     import About from './pages/About.svelte';
     import {Chart, IdCard, Logo, Refresh, Settings, SettingsAlt, Users} from './lib/icons';
     import {clearUser, user} from './stores/userStore.js';
     import {logout} from "./api/userApis.js";
     import {showToast} from "./stores/toastStore.js";
-    import Menu from "./pages/Menu.svelte";
+    import Menu from "./pages/MenuPage.svelte";
+    import Role from "./pages/RolePage.svelte";
     import Setting from "./pages/Setting.svelte";
+    import {onMount} from "svelte";
+    import {myRouter} from "./stores/authStore.js";
 
     const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
@@ -17,6 +20,7 @@
     const layoutRoutes = {
         '/': wrap({component: Home}),
         '/sys_menu': wrap({component: Menu}),
+        '/sys_role': wrap({component: Role}),
         '/about': wrap({component: About}),
         '/setting': wrap({component: Setting})
     }
@@ -27,6 +31,10 @@
         setTimeout(() => push('/login'), 800)
     }
     const isActive = (path) => $location === path;
+    onMount(() => {
+        console.log("d")
+        console.log($myRouter)
+    })
 
 </script>
 
@@ -59,7 +67,7 @@
                     </span>
                     <span class="nav-text">sys_menu</span>
                 </a>
-                <a href="#/about" class="nav-item" class:active={isActive('/about')}>
+                <a href="#/sys_role" class="nav-item" class:active={isActive('/sys_role')}>
                     <span class="nav-icon">
                         <IdCard size={20}/>
                     </span>
@@ -69,6 +77,12 @@
             <div class="nav-section">
                 <div class="section-label">System</div>
                 <a href="#/setting" class="nav-item" class:active={isActive('/setting')}>
+                    <span class="nav-icon">
+                        <Settings size={20}/>
+                    </span>
+                    <span class="nav-text">Settings</span>
+                </a>
+                <a href="#/about" class="nav-item" class:active={isActive('/about')}>
                     <span class="nav-icon">
                         <Settings size={20}/>
                     </span>

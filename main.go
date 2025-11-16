@@ -67,7 +67,7 @@ func main() {
 				"message": "success",
 				"data":    menuTree,
 			})
-		})
+		}).Bind(apis.RequireAuth())
 		se.Router.GET("/api/getAllMenuTree", func(e *core.RequestEvent) error {
 			// 调用服务获取菜单树
 			menuService := NewMenuService(app)

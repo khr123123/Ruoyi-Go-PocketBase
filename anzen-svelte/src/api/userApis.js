@@ -81,6 +81,6 @@ export async function listUser(page = 1, perPage = 20, sort = '-created', filter
     });
 }
 
-
+pb.autoCancellation(false);
 // 导出 PocketBase 实例（可直接用）
 export {pb};

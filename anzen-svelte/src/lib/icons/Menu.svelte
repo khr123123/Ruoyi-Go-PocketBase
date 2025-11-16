@@ -1,4 +1,4 @@
-<!-- lib/icons/Menu.svelte -->
+<!-- lib/icons/MenuPage.svelte -->
 <svg
         viewBox="0 0 14 14"
         fill="none"

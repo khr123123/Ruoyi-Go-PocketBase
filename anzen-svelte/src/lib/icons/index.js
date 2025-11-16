@@ -17,3 +17,4 @@ export {default as Download} from './Download.svelte';
 export {default as Code} from './Code.svelte';
 export {default as Bars4} from './Bars4.svelte';
 export {default as ChevronDown} from './ChevronDown.svelte';
+export {default as ChevronUpDown} from './ChevronUpDown.svelte';
