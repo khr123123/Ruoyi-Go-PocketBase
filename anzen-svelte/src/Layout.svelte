@@ -32,8 +32,7 @@
     }
     const isActive = (path) => $location === path;
     onMount(() => {
-        console.log("d")
-        console.log($myRouter)
+        console.log("myrouter", $myRouter)
     })
 
 </script>

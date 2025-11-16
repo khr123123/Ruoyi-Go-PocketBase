@@ -9,7 +9,7 @@
     import {user} from "./stores/userStore.js";
     import {onMount} from 'svelte';
     import {getUserRouter} from "./api/menuApis.js";
-    import {myRouter} from "./stores/authStore.js";
+    import {extractPermissions, myPermissions, myRouter} from "./stores/authStore.js";
     // 订阅 user（包含 token）
     let currentUser;
     user.subscribe(v => currentUser = v);
@@ -41,6 +41,7 @@
         if (hasToken) {
             let res = await getUserRouter();
             myRouter.set(res.data || []);
+            myPermissions.set(extractPermissions(res.data) || [])
         }
     });
 </script>

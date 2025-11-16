@@ -1,6 +1,6 @@
 <script>
 
-    import TreeTable from "../components/TreeTable.svelte";
+    import {permission} from "../utils/permissionDirective.js"
 
     let menus = [
         {
@@ -11,16 +11,16 @@
                     id: "11",
                     name: "用户管理",
                     children: [
-                        { id: "111", name: "用户列表" },
-                        { id: "112", name: "权限分配" }
+                        {id: "111", name: "用户列表"},
+                        {id: "112", name: "权限分配"}
                     ]
                 },
                 {
                     id: "12",
                     name: "菜单管理",
                     children: [
-                        { id: "121", name: "新增菜单" },
-                        { id: "122", name: "编辑菜单" }
+                        {id: "121", name: "新增菜单"},
+                        {id: "122", name: "编辑菜单"}
                     ]
                 }
             ]
@@ -28,15 +28,14 @@
     ];
 
     let columns = [
-        { label: "名称", key: "name" },
-        { label: "路径", key: "path" }
+        {label: "名称", key: "name"},
+        {label: "路径", key: "path"}
     ];
 </script>
+<button use:permission={''}>kong</button>
+<button use:permission={'sys:user:edit'}>sys:user:edit</button>
+<button use:permission={'sys:user:delete'}>sys:user:delete</button>
+<button use:permission={'sys:user:delete'}>sys:user:delete</button>
+<button use:permission={'sys:user:add'}>sys:user:add</button>
+<button use:permission={'sys:user:add1'}>sys:user:add1</button>
 
-<TreeTable
-        data={menus}
-        columns={columns}
-        onEdit={row => console.log("edit", row)}
-        onDelete={row => console.log("delete", row)}
-        onCheck={row => console.log("check", row)}
-/>
