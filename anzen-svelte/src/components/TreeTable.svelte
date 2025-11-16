@@ -1,19 +1,20 @@
 <script>
     import { createEventDispatcher, onMount } from 'svelte';
-    import {ChevronDown, Code, Search} from "../lib/icons/index.js";
+    import { ChevronDown, Code, ArrowUp, ArrowDown, Search } from "../lib/icons/index.js";
 
-    // Props
     export let data = [];
-    export let total = 0;
-    export let page = 1;
-    export let showAddButton = true;
-    export let addButtonText = "New record";
-    export let showApiPreview = true;
     export let columns = [];
     export let searchPlaceholder = 'Search...';
+    export let addButtonText = "New record";
+    export let showAddButton = true;
+    export let showApiPreview = false;
     export let showCheckbox = true;
-    export let actions = ['edit', 'delete', 'more'];
     export let autoExpandOnSearch = true;
+    export let actions = ['edit', 'delete'];
+    export let onAdd = null;
+    export let onEdit = null;
+    export let onDelete = null;
+
     const dispatch = createEventDispatcher();
 
     let search = "";
@@ -23,39 +24,26 @@
     let flatData = [];
     let nodeMap = new Map();
     let parentMap = new Map();
-    // 内部状态
-    let sort = "-created";
+    let currentSort = "";
     let showColumnMenu = false;
-    let menuButtonRect = null;
-    let selectedRows = new Set();
-    let selectAll = false;
+    let visibleColumns = {};
 
-    // --------- sanitize & helpers ----------
     function ensureChildrenArray(node) {
-        // if children is a JSON string, parse it; if undefined, set to []
         if (typeof node.children === 'string') {
-            try {
-                node.children = JSON.parse(node.children || '[]');
-            } catch (e) {
-                node.children = [];
-            }
+            try { node.children = JSON.parse(node.children || '[]'); }
+            catch { node.children = []; }
         }
-        if (!Array.isArray(node.children)) {
-            node.children = [];
-        }
-        // recursively sanitize children
+        if (!Array.isArray(node.children)) node.children = [];
         node.children.forEach(c => ensureChildrenArray(c));
     }
 
     function sanitizeData(nodes) {
         if (!Array.isArray(nodes)) return [];
-        // work on shallow copies to avoid unexpected external mutation
         const cloned = nodes.map(n => ({ ...n }));
         cloned.forEach(n => ensureChildrenArray(n));
         return cloned;
     }
 
-    // --------- build maps ----------
     function buildMaps(nodes, parent = null) {
         if (!Array.isArray(nodes)) return;
         nodes.forEach(node => {
@@ -65,31 +53,25 @@
         });
     }
 
-    // --------- flat render ----------
     function renderTreeRows(nodes, level = 0) {
         const rows = [];
         if (!Array.isArray(nodes)) return rows;
         nodes.forEach(node => {
-            // push shallow copy with level marker (does not mutate original node)
             rows.push({ ...node, _level: level });
-            if (node.children && node.children.length > 0 && expandedIds.has(node.id)) {
-                rows.push(...renderTreeRows(node.children, level + 1));
-            }
+            if (node.children?.length && expandedIds.has(node.id)) rows.push(...renderTreeRows(node.children, level + 1));
         });
         return rows;
     }
 
-    // --------- toggles ----------
     function toggleExpand(id) {
         const newSet = new Set(expandedIds);
-        if (newSet.has(id)) newSet.delete(id);
-        else newSet.add(id);
+        newSet.has(id) ? newSet.delete(id) : newSet.add(id);
         expandedIds = newSet;
         allExpanded = checkAllExpanded();
     }
 
     function checkAllExpanded() {
-        const nodesWithChildren = Array.from(nodeMap.values()).filter(n => Array.isArray(n.children) && n.children.length);
+        const nodesWithChildren = Array.from(nodeMap.values()).filter(n => n.children?.length);
         if (nodesWithChildren.length === 0) return false;
         return nodesWithChildren.every(n => expandedIds.has(n.id));
     }
@@ -98,134 +80,79 @@
         allExpanded = !allExpanded;
         if (allExpanded) {
             const newSet = new Set();
-            function dfs(nodes) {
-                if (!Array.isArray(nodes)) return;
-                nodes.forEach(n => {
-                    if (n.children && n.children.length) {
-                        newSet.add(n.id);
-                        dfs(n.children);
-                    }
-                });
-            }
+            function dfs(nodes) { nodes?.forEach(n => { if (n.children?.length) { newSet.add(n.id); dfs(n.children); } }); }
             dfs(data);
             expandedIds = newSet;
-        } else {
-            expandedIds = new Set();
-        }
+        } else expandedIds = new Set();
     }
 
-    // --------- search ----------
     function handleSearch() {
-        dispatch('search', { search: search });
+        dispatch('search', { search });
         if (!search) return;
+
         const matched = [];
         const q = search.toLowerCase();
         nodeMap.forEach((node, id) => {
-            const text = ((node.menuName || node.name || '') + ' ' + (node.permission || '') + ' ' + (node.url || '')).toLowerCase();
-            if (text.includes(q)) matched.push(id);
+            const searchText = [node.menuName || node.name || '', node.permission || '', node.url || ''].join(' ').toLowerCase();
+            if (searchText.includes(q)) matched.push(id);
         });
 
         if (autoExpandOnSearch) {
             const newSet = new Set(expandedIds);
             matched.forEach(id => {
-                let p = parentMap.get(id);
-                while (p) {
-                    newSet.add(p);
-                    p = parentMap.get(p);
+                let parentId = parentMap.get(id);
+                while (parentId) {
+                    newSet.add(parentId);
+                    parentId = parentMap.get(parentId);
                 }
             });
             expandedIds = newSet;
         }
     }
 
-    // 列显示控制
-    let visibleColumns = {};
-    $: {
-        visibleColumns = {};
-        columns.forEach(col => {
-            visibleColumns[col.key] = col.visible !== false;
-        });
+    function handleSort(field) {
+        if (currentSort === field) currentSort = "-" + field;
+        else if (currentSort === "-" + field) currentSort = field;
+        else currentSort = field;
+        dispatch('sort', { sort: currentSort });
     }
 
-    // 搜索变化时触发
-    $: if (search !== undefined) {
-        dispatch('search', {search, page: 1});
+    function getSortIcon(key) {
+        if (currentSort === key) return ArrowUp;
+        if (currentSort === `-${key}`) return ArrowDown;
+        return null;
     }
 
-    // 排序切换
-    function changeSort(field) {
-        if (sort === field) sort = "-" + field;
-        else if (sort === "-" + field) sort = field;
-        else sort = field;
-        dispatch('sort', {sort, page});
+    function toggleColumn(key) {
+        visibleColumns[key] = !visibleColumns[key];
+        visibleColumns = { ...visibleColumns };
     }
 
-    // 分页
-    function prevPage() {
-        if (page > 1) {
-            page -= 1;
-            dispatch('pageChange', {page});
-        }
-    }
-
-    function nextPage() {
-        page += 1;
-        dispatch('pageChange', {page});
-    }
-
-    // 列显示控制
-    function toggleColumn(column) {
-        visibleColumns[column] = !visibleColumns[column];
-    }
-
-    function openColumnMenu(event) {
-        showColumnMenu = true;
-        menuButtonRect = event.currentTarget.getBoundingClientRect();
-    }
-
-    function stopPropagation(event) {
-        event.stopPropagation();
-    }
-
-    // 行选择
-    function toggleSelectAll() {
-        if (selectAll) {
-            selectedRows = new Set();
-        } else {
-            selectedRows = new Set(data.map(item => item.id));
-        }
-        selectAll = !selectAll;
-    }
-    // --------- checkbox selection (propagate down/up) ----------
     function toggleSelect(id) {
         const checked = !selectedIds.has(id);
         const newSel = new Set(selectedIds);
-        if (checked) newSel.add(id);
-        else newSel.delete(id);
 
-        // propagate down
+        if (checked) newSel.add(id); else newSel.delete(id);
+
         const node = nodeMap.get(id);
         if (node) {
-            function setDown(n, val) {
-                if (val) newSel.add(n.id);
-                else newSel.delete(n.id);
-                if (n.children && n.children.length) n.children.forEach(c => setDown(c, val));
+            function setChildrenState(n, isChecked) {
+                if (isChecked) newSel.add(n.id); else newSel.delete(n.id);
+                n.children?.forEach(child => setChildrenState(child, isChecked));
             }
-            setDown(node, checked);
+            setChildrenState(node, checked);
         }
 
-        // propagate up
-        function updateUp(currId) {
-            const pId = parentMap.get(currId);
+        function updateParentState(nodeId) {
+            const pId = parentMap.get(nodeId);
             if (!pId) return;
             const parent = nodeMap.get(pId);
-            if (!parent) return;
+            if (!parent?.children) return;
             const allChildrenSelected = parent.children.every(c => newSel.has(c.id));
-            if (allChildrenSelected) newSel.add(pId);
-            else newSel.delete(pId);
-            updateUp(pId);
+            if (allChildrenSelected) newSel.add(pId); else newSel.delete(pId);
+            updateParentState(pId);
         }
-        updateUp(id);
+        updateParentState(id);
 
         selectedIds = newSel;
         dispatch('selectionChange', { selected: Array.from(selectedIds) });
@@ -233,183 +160,167 @@
 
     function isIndeterminate(id) {
         const node = nodeMap.get(id);
-        if (!node || !node.children || node.children.length === 0) return false;
-        const some = node.children.some(c => selectedIds.has(c.id) || isIndeterminate(c.id));
-        const all = node.children.every(c => selectedIds.has(c.id) && !isIndeterminate(c.id));
-        return some && !all;
+        if (!node?.children?.length) return false;
+        const someSelected = node.children.some(c => selectedIds.has(c.id) || isIndeterminate(c.id));
+        const allSelected = node.children.every(c => selectedIds.has(c.id) && !isIndeterminate(c.id));
+        return someSelected && !allSelected;
     }
 
-    // --------- actions ----------
-    function onAdd() { dispatch('add'); }
-    function onEdit(row) { dispatch('edit', row); }
-    function onDelete(row) { dispatch('delete', row); }
-    function onMore(row) { dispatch('more', row); }
+    function handleAdd() { if (onAdd) onAdd(); dispatch('add'); }
+    function handleEdit(row) { if (onEdit) onEdit(row); dispatch('edit', row); }
+    function handleDelete(row) { if (onDelete) onDelete(row); dispatch('delete', row); }
 
-    // --------- cell value ----------
     function getCellValue(row, column) {
         const value = row[column.key];
-        if (column.render && typeof column.render === 'function') {
-            return column.render(value, row);
-        }
-        return value ?? '-';
+        return column.render?.(value, row) ?? value ?? '-';
     }
 
-    // --------- reactive: when data changes, sanitize & rebuild maps & flatData ----------
     $: {
-        // sanitize data to ensure children are arrays
+        visibleColumns = {};
+        columns.forEach(col => { visibleColumns[col.key] = col.visible !== false; });
+    }
+
+    $: {
         data = sanitizeData(data);
-        // rebuild maps
         nodeMap = new Map();
         parentMap = new Map();
         buildMaps(data);
-        // prune selected / expanded to existing nodes
-        const ids = new Set(Array.from(nodeMap.keys()));
-        selectedIds = new Set(Array.from(selectedIds).filter(id => ids.has(id)));
-        expandedIds = new Set(Array.from(expandedIds).filter(id => ids.has(id)));
+        const validIds = new Set(nodeMap.keys());
+        selectedIds = new Set([...selectedIds].filter(id => validIds.has(id)));
+        expandedIds = new Set([...expandedIds].filter(id => validIds.has(id)));
         allExpanded = checkAllExpanded();
-        // rebuild flatData
         flatData = renderTreeRows(data);
     }
-
-    onMount(() => {
-        // nothing else
-    });
 </script>
 
-
 <div class="bg-white rounded-xl shadow-md overflow-hidden">
-    <!-- Header -->
     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
         <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-md w-full max-w-md">
             <Search size={16}/>
-            <input
-                    class="bg-transparent outline-none text-sm flex-1"
-                    placeholder={searchPlaceholder}
-            />
+            <input bind:value={search} on:input={handleSearch} class="bg-transparent outline-none text-sm flex-1" placeholder={searchPlaceholder}/>
         </div>
 
         <div class="flex gap-2">
+            <button on:click={toggleExpandAll} class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition" title={allExpanded ? 'Collapse All' : 'Expand All'}>
+                {allExpanded ? '📂' : '📁'} {allExpanded ? 'Collapse' : 'Expand'}
+            </button>
             {#if showApiPreview}
                 <button class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition">
                     <Code size={16}/> API Preview
                 </button>
             {/if}
-
             {#if showAddButton}
-                <button
-                        on:click={() => onAdd && onAdd()}
-                        class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-black text-white hover:bg-gray-800 transition">
+                <button on:click={handleAdd} class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 transition">
                     <span class="text-lg leading-none">+</span> {addButtonText}
                 </button>
             {/if}
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+    <div class="overflow-x-auto">
         <table class="w-full text-sm">
-            <thead>
-            <tr class="bg-gray-100 text-gray-600 border-b border-gray-200">
-                {#if showCheckbox}
-                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 w-12">
-                        <input type="checkbox" checked={selectAll} on:change={toggleSelectAll} />
-                    </th>
-                {/if}
-
+            <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+                {#if showCheckbox}<th class="px-4 py-3 w-12"></th>{/if}
                 {#each columns as column}
                     {#if visibleColumns[column.key]}
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 {column.sortable !== false ? 'cursor-pointer' : ''}"
-                            on:click={() => column.sortable !== false && changeSort(column.key)}>
-                            <div class="flex items-center gap-1">
-                                {#if column.icon}
-                                    <svelte:component this={column.icon} size={14}/>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 {column.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''}" on:click={() => column.sortable !== false && handleSort(column.key)}>
+                            <div class="flex items-center gap-2">
+                                {#if column.icon}<svelte:component this={column.icon} size={14}/>{/if}
+                                <span>{column.label}</span>
+                                {#if column.sortable !== false}
+                                    {#if getSortIcon(column.key)}
+                                        <svelte:component this={getSortIcon(column.key)} size={12} class="text-blue-600"/>
+                                    {:else}
+                                        <span class="text-gray-400 text-xs">⇅</span>
+                                    {/if}
                                 {/if}
-                                {column.label}
                             </div>
                         </th>
                     {/if}
                 {/each}
-
-                <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">
-                    Actions
-                </th>
-
+                <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
                 <th class="px-3 w-10">
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-black transition-colors"
-                            on:click={openColumnMenu}>
+                    <button class="flex items-center gap-1 text-gray-600 hover:text-black transition-colors" on:click={() => showColumnMenu = !showColumnMenu}>
                         <ChevronDown size={16} class="transition-transform {showColumnMenu ? 'rotate-180' : ''}"/>
                     </button>
                 </th>
             </tr>
             </thead>
 
-
             <tbody>
             {#each flatData as row}
                 <tr class="border-b hover:bg-gray-50 transition">
                     {#if showCheckbox}
-                        <td class="px-4 py-3 text-sm">
-                            <input type="checkbox"
-                                   checked={selectedIds.has(row.id)}
-                                   aria-checked={isIndeterminate(row.id) ? 'mixed' : selectedIds.has(row.id)}
-                                   on:change={() => toggleSelect(row.id)} />
+                        <td class="px-4 py-3">
+                            <input type="checkbox" checked={selectedIds.has(row.id)} indeterminate={isIndeterminate(row.id)} on:change={() => toggleSelect(row.id)} class="rounded"/>
                         </td>
                     {/if}
 
                     {#each columns as column, idx}
-                        <td class={`px-4 py-3 text-sm ${column.class || ''}`}>
-                            {#if idx === 0}
-                                <div class="flex items-center gap-2" style="padding-left: {row._level*20}px">
-                                    {#if row.children?.length}
-                                        <button on:click={() => toggleExpand(row.id)}
-                                                class="w-5 h-5 flex items-center justify-center hover:bg-gray-200 rounded transition">
-                                            {expandedIds.has(row.id) ? "▼" : "▶"}
-                                        </button>
-                                    {:else}
-                                        <span class="w-5"></span>
-                                    {/if}
-                                    <span>{@html getCellValue(row, column)}</span>
-                                </div>
-                            {:else}
-                                {@html getCellValue(row, column)}
-                            {/if}
-                        </td>
+                        {#if visibleColumns[column.key]}
+                            <td class="px-4 py-3 text-sm {column.class || ''}">
+                                {#if idx === 0}
+                                    <div class="flex items-center gap-2" style="padding-left: {row._level * 20}px">
+                                        {#if row.children?.length}
+                                            <button on:click={() => toggleExpand(row.id)} class="w-5 h-5 flex items-center justify-center hover:bg-gray-200 rounded transition text-gray-600">
+                                                {expandedIds.has(row.id) ? '▼' : '▶'}
+                                            </button>
+                                        {:else}<span class="w-5"></span>{/if}
+                                        <span>{@html getCellValue(row, column)}</span>
+                                    </div>
+                                {:else}
+                                    {@html getCellValue(row, column)}
+                                {/if}
+                            </td>
+                        {/if}
                     {/each}
 
                     <td class="px-4 py-3 text-center">
                         <div class="inline-flex gap-2">
-                            {#each actions as act}
-                                {#if act === 'edit'}
-                                    <button on:click={() => onEdit(row)}
-                                            class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">
-                                        Edit
-                                    </button>
-                                {:else if act === 'delete'}
-                                    <button on:click={() => onDelete(row)}
-                                            class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">
-                                        Delete
-                                    </button>
-                                {:else if act === 'more'}
-                                    <button on:click={() => onMore(row)}
-                                            class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
-                                        ···
-                                    </button>
+                            {#each actions as action}
+                                {#if action === 'edit'}
+                                    <button on:click={() => handleEdit(row)} class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">Edit</button>
+                                {:else if action === 'delete'}
+                                    <button on:click={() => handleDelete(row)} class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">Delete</button>
+                                {:else if action === 'more'}
+                                    <button on:click={() => dispatch('more', row)} class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">···</button>
                                 {/if}
                             {/each}
                         </div>
                     </td>
+                    <td class="px-3"></td>
                 </tr>
             {/each}
             </tbody>
-
         </table>
     </div>
 
     {#if flatData.length === 0}
-        <div class="p-8 text-center text-gray-500">No data available</div>
+        <div class="p-8 text-center text-gray-500">
+            <p class="text-lg">📭</p>
+            <p class="mt-2">No data available</p>
+        </div>
     {/if}
 </div>
 
+{#if showColumnMenu}
+    <div class="fixed inset-0 z-40" on:click={() => showColumnMenu = false}></div>
+    <div class="fixed z-50 bg-white rounded-lg shadow-lg border p-2 mt-1 right-4 top-32">
+        <div class="text-xs font-medium text-gray-600 px-2 py-1 mb-1">Show Columns</div>
+        {#each columns as column}
+            <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
+                <input type="checkbox" checked={visibleColumns[column.key]} on:change={() => toggleColumn(column.key)} class="rounded"/>
+                <span class="text-sm">{column.label}</span>
+            </label>
+        {/each}
+    </div>
+{/if}
+
 <style>
-    /* 可以在这里添加 indeterminate checkbox JS（如果需要） */
+    input[type="checkbox"]:indeterminate {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
 </style>

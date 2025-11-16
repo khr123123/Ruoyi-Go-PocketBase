@@ -16,29 +16,45 @@
     let allMenus = [];
     let selectedPermissions = [];
 
-    // Column definitions
+    // Column definitions with operations
     const columns = [
         {key: 'id', label: 'ID', sortable: true, class: 'font-mono text-xs'},
         {key: 'roleName', label: 'Role Name', sortable: true},
+        {key: 'roleKey', label: 'Role Key', class: 'font-mono text-sm'},
+        {
+            key: 'status',
+            label: 'Status',
+            render: (v) => {
+                const isNormal = v === 'normal';
+                return `<span class="px-2 py-1 text-xs rounded ${isNormal ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                    ${isNormal ? 'Enabled' : 'Disabled'}
+                </span>`;
+            }
+        },
         {
             key: 'permission',
             label: 'Permissions',
             render: (v) => {
-                if (!v || v.length === 0) return '<span class="text-gray-400">No permissions</span>';
-                return `<span class="text-xs text-blue-600">${v.length} permissions</span>`;
+                if (!v || v.length === 0) return '<span class="text-gray-400 text-xs">No permissions</span>';
+                return `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">${v.length} items</span>`;
             }
         },
         {
             key: 'created',
             label: 'Created',
             class: 'text-xs text-gray-600',
-            render: (v) => new Date(v).toLocaleString()
-        },
+            render: (v) => new Date(v).toLocaleString('zh-CN')
+        }
+    ];
+
+    // Custom action buttons
+    const customActions = [
         {
-            key: 'updated',
-            label: 'Updated',
-            class: 'text-xs text-gray-600',
-            render: (v) => new Date(v).toLocaleString()
+            label: 'Permissions',
+            icon: '🔐',
+            class: 'text-purple-600 hover:text-purple-800',
+            show: () => hasPermission('system:role:edit'),
+            onClick: handleConfigPermission
         }
     ];
 
@@ -49,8 +65,6 @@
             const filter = search ? `roleName ~ "${search}" || roleKey ~ "${search}"` : '';
             const res = await listRole(p, perPage, sort, filter);
 
-            console.log('Role data:', res.items);
-
             roles = res.items;
             total = res.totalItems;
             page = p;
@@ -60,7 +74,7 @@
         }
     }
 
-    // Load all menus for permission selection
+    // Load all menus
     async function loadAllMenus() {
         try {
             const response = await fetch('http://127.0.0.1:8090/api/getAllMenuTree', {
@@ -77,7 +91,6 @@
         }
     }
 
-    // Flatten menu tree
     function flattenMenuTree(tree, result = []) {
         tree.forEach(node => {
             result.push(node);
@@ -100,12 +113,7 @@
         loadRoles({page: event.detail.page});
     }
 
-    // Add role
     function handleAdd() {
-        if (!hasPermission('system:role:add')) {
-            showToast('No permission', 'error');
-            return;
-        }
         currentRole = {
             roleName: '',
             roleKey: '',
@@ -116,28 +124,17 @@
         showDialog = true;
     }
 
-    // Edit role
     function handleEdit(role) {
-        if (!hasPermission('system:role:edit')) {
-            showToast('No permission', 'error');
-            return;
-        }
         currentRole = {...role};
         showDialog = true;
     }
 
-    // Configure permissions
     function handleConfigPermission(role) {
-        if (!hasPermission('system:role:edit')) {
-            showToast('No permission', 'error');
-            return;
-        }
         currentRole = {...role};
         selectedPermissions = role.permission || [];
         showPermissionDialog = true;
     }
 
-    // Toggle permission selection
     function togglePermission(menuId) {
         const index = selectedPermissions.indexOf(menuId);
         if (index > -1) {
@@ -147,7 +144,6 @@
         }
     }
 
-    // Save role
     async function saveRole() {
         if (!currentRole.roleName || !currentRole.roleKey) {
             showToast('Role name and role key are required', 'error');
@@ -183,7 +179,6 @@
         }
     }
 
-    // Save permissions
     async function savePermissions() {
         try {
             currentRole.permission = selectedPermissions;
@@ -213,13 +208,7 @@
         }
     }
 
-    // Delete role
-    async function deleteRole(role) {
-        if (!hasPermission('system:role:delete')) {
-            showToast('No permission', 'error');
-            return;
-        }
-
+    async function handleDelete(role) {
         if (!confirm(`Are you sure to delete role "${role.roleName}"?`)) {
             return;
         }
@@ -260,12 +249,18 @@
         {page}
         searchPlaceholder="Search role name, role key..."
         addButtonText="Add Role"
+        showOperations={true}
+        {customActions}
+        canEdit={hasPermission('system:role:edit')}
+        canDelete={hasPermission('system:role:delete')}
         onAdd={handleAdd}
         onEdit={handleEdit}
+        onDelete={handleDelete}
         on:search={handleSearch}
         on:sort={handleSort}
         on:pageChange={handlePageChange}
 />
+
 <!-- Role Edit Dialog -->
 {#if showDialog}
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -293,7 +288,6 @@
                             placeholder="e.g., admin, user"
                             class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p class="text-xs text-gray-500 mt-1">Unique identifier for the role</p>
                 </div>
 
                 <div>
@@ -336,7 +330,7 @@
     </div>
 {/if}
 
-<!-- Permission Config Dialog -->
+<!-- Permission Dialog -->
 {#if showPermissionDialog}
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">

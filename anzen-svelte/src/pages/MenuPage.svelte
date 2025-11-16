@@ -5,25 +5,37 @@
     import {hasPermission} from '../stores/authStore';
     import {showToast} from '../stores/toastStore';
     import {listMenu} from "../api/menuApis.js";
-    import {permission} from '../utils/permissionDirective.js';
 
     let menus = [];
-    let rawMenus = []; // 保存原始扁平数据
+    let rawMenus = [];
     let showDialog = false;
     let currentMenu = null;
-    let parentMenuOptions = []; // 父菜单选项
+    let parentMenuOptions = [];
 
-    // Column definitions
+    /**
+     * ========================================
+     * 列配置
+     * ========================================
+     * TreeTable 的 columns 参数配置示例
+     */
     const columns = [
-        {key: 'menuName', label: 'MenuName'},
+        {
+            key: 'menuName',        // 数据字段名
+            label: 'Menu Name',     // 表头显示
+            sortable: true,         // 支持排序
+            visible: true           // 默认显示
+        },
         {
             key: 'icon',
             label: 'Icon',
-            class: 'text-xs font-mono'
+            sortable: false,        // 不支持排序
+            class: 'text-xs font-mono text-gray-600'
         },
         {
             key: 'menuType',
             label: 'Type',
+            sortable: true,
+            // 自定义渲染函数
             render: (v) => {
                 const types = {M: 'Directory', C: 'Menu', F: 'Button'};
                 const colors = {M: 'blue', C: 'green', F: 'yellow'};
@@ -33,25 +45,47 @@
         {
             key: 'orderNum',
             label: 'Sort',
-            render: (v) => `<span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">${v}</span>`
+            sortable: true,
+            render: (v) => `<span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">${v ?? '-'}</span>`
         },
-        {key: 'permission', label: 'Permission', class: 'text-xs font-mono'},
-        {key: 'url', label: 'Route', class: 'text-xs'}
+        {
+            key: 'permission',
+            label: 'Permission',
+            sortable: false,
+            class: 'text-xs font-mono',
+            render: (v) => v ? `<code class="text-blue-600">${v}</code>` : '<span class="text-gray-400">-</span>'
+        },
+        {
+            key: 'url',
+            label: 'Route',
+            sortable: false,
+            class: 'text-xs',
+            render: (v) => v ? `<code class="text-green-600">${v}</code>` : '<span class="text-gray-400">-</span>'
+        }
     ];
 
-    // 构建树形结构
+    /**
+     * ========================================
+     * 数据处理函数
+     * ========================================
+     */
+
+    /**
+     * buildTree - 构建树形结构
+     * 将扁平数据转换为树形结构
+     */
     function buildTree(flatList) {
         if (!flatList || flatList.length === 0) return [];
 
         const map = {};
         const roots = [];
 
-        // 深拷贝并创建映射
+        // 创建节点映射
         flatList.forEach(item => {
             map[item.id] = {...item, children: []};
         });
 
-        // 构建树
+        // 构建父子关系
         flatList.forEach(item => {
             const node = map[item.id];
             if (!item.parentId || item.parentId === '0') {
@@ -59,7 +93,6 @@
             } else if (map[item.parentId]) {
                 map[item.parentId].children.push(node);
             } else {
-                // 父节点不存在，当作根节点
                 roots.push(node);
             }
         });
@@ -78,58 +111,49 @@
         return roots;
     }
 
-    // Load menu list
+    /**
+     * buildParentOptions - 构建父菜单选项
+     * 用于编辑对话框的父菜单选择器
+     */
+    function buildParentOptions() {
+        parentMenuOptions = [{id: '0', menuName: 'Root Menu'}];
+        rawMenus.forEach(menu => {
+            if (menu.menuType === 'M' || menu.menuType === 'C') {
+                parentMenuOptions.push(menu);
+            }
+        });
+    }
+
+    /**
+     * ========================================
+     * API 交互函数
+     * ========================================
+     */
+
+    /**
+     * loadMenus - 加载菜单列表
+     */
     async function loadMenus(params = {}) {
         try {
-            const {search = ''} = params;
-            const filter = search ? `menuName ~ "${search}" || permission ~ "${search}" || url ~ "${search}"` : '';
-            // 获取所有菜单（不分页）
-            const res = await listMenu(1, 500, 'orderNum', filter);
+            const {search = '', sort = '-created', page: p = 1} = params;
+            const filter = search
+                ? `menuName ~ "${search}" || permission ~ "${search}" || url ~ "${search}"`
+                : '';
+
+            const res = await listMenu(1, 500, sort, filter);
             rawMenus = res.items || [];
             menus = buildTree(rawMenus);
+            buildParentOptions();
         } catch (error) {
             console.error('Load menu error:', error);
             showToast('Failed to load menus', 'error');
         }
     }
 
-    function handleSearch(event) {
-        loadMenus({search: event.detail.search});
-    }
-
-    // Add menu
-    function handleAdd() {
-        if (!hasPermission('sys:menu:add')) {
-            showToast('No permission', 'error');
-            return;
-        }
-        currentMenu = {
-            menuName: '',
-            menuType: 'M',
-            parentId: '0',
-            orderNum: 0,
-            url: '',
-            icon: '',
-            permission: '',
-            status: 'show'
-        };
-        showDialog = true;
-    }
-
-    // Edit menu
-    function handleEdit(menu) {
-        if (!hasPermission('sys:menu:edit')) {
-            showToast('No permission', 'error');
-            return;
-        }
-        currentMenu = {...menu};
-        delete currentMenu.children; // 移除 children 字段
-        showDialog = true;
-    }
-
-    // Save menu
+    /**
+     * saveMenu - 保存菜单（新增或编辑）
+     */
     async function saveMenu() {
-        // 验证必填项
         if (!currentMenu.menuName || !currentMenu.menuType) {
             showToast('Please fill in required fields', 'error');
             return;
@@ -141,7 +165,6 @@
                 : 'http://127.0.0.1:8090/api/collections/sys_menu/records';
             const method = currentMenu.id ? 'PATCH' : 'POST';
 
-            // 准备提交数据
             const submitData = {
                 menuName: currentMenu.menuName,
                 menuType: currentMenu.menuType,
@@ -176,20 +199,148 @@
         }
     }
 
+    /**
+     * ========================================
+     * 事件处理函数
+     * ========================================
+     */
+    function handleSearch(event) {
+        loadMenus({search: event.detail.search, page: 1});
+    }
+
+    function handleSort(event) {
+        loadMenus({sort: event.detail.sort, page: event.detail.page});
+    }
+
+    function handlePageChange(event) {
+        loadMenus({page: event.detail.page});
+    }
+    /**
+     * handleAdd - 处理添加按钮点击
+     */
+    function handleAdd() {
+        if (!hasPermission('sys:menu:add')) {
+            showToast('No permission', 'error');
+            return;
+        }
+
+        currentMenu = {
+            menuName: '',
+            menuType: 'M',
+            parentId: '0',
+            orderNum: 0,
+            url: '',
+            icon: '',
+            permission: '',
+            status: 'show'
+        };
+        showDialog = true;
+    }
+
+    /**
+     * handleEdit - 处理编辑按钮点击
+     */
+    function handleEdit(event) {
+        const menu = event.detail;
+
+        if (!hasPermission('sys:menu:edit')) {
+            showToast('No permission', 'error');
+            return;
+        }
+
+        currentMenu = {...menu};
+        delete currentMenu.children;
+        showDialog = true;
+    }
+
+    /**
+     * handleDelete - 处理删除按钮点击
+     */
+    async function handleDelete(event) {
+        const menu = event.detail;
+
+        if (!hasPermission('sys:menu:remove')) {
+            showToast('No permission', 'error');
+            return;
+        }
+
+        if (!confirm(`Are you sure to delete menu "${menu.menuName}"?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `http://127.0.0.1:8090/api/collections/sys_menu/records/${menu.id}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            );
+
+            if (response.ok) {
+                showToast('Deleted successfully', 'success');
+                loadMenus();
+            } else {
+                showToast('Delete failed', 'error');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            showToast('Operation failed', 'error');
+        }
+    }
+
     onMount(() => {
         loadMenus();
     });
 </script>
 
+<!--
+    ========================================
+    TreeTable 组件使用示例
+    ========================================
+
+    基础用法：
     <TreeTable
-            data={menus}
-            columns={columns}
-            searchPlaceholder="Search menu name, permission..."
-            addButtonText="Add Menu"
-            on:search={handleSearch}
+        data={treeData}           // 必需：树形数据
+        columns={columnConfig}    // 必需：列配置
     />
 
-<!-- Menu Edit Dialog -->
+    完整配置：
+    <TreeTable
+        data={treeData}
+        columns={columnConfig}
+        searchPlaceholder="Search..."
+        addButtonText="Add Menu"
+        showAddButton={true}
+        showCheckbox={true}
+        actions={['edit', 'delete']}
+        onAdd={handleAdd}
+        on:edit={handleEdit}
+        on:delete={handleDelete}
+        on:search={handleSearch}
+        on:sort={handleSort}
+    />
+-->
+<TreeTable
+        data={menus}
+        {columns}
+        searchPlaceholder="Search menu name, permission, route..."
+        addButtonText="Add Menu"
+        showAddButton={true}
+        showApiPreview={false}
+        showCheckbox={true}
+        actions={['edit', 'delete']}
+        autoExpandOnSearch={true}
+        onAdd={handleAdd}
+        on:edit={handleEdit}
+        on:delete={handleDelete}
+        on:search={handleSearch}
+        on:sort={handleSort}
+/>
+
+<!-- 编辑对话框 -->
 {#if showDialog}
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -227,13 +378,11 @@
                             class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         {#each parentMenuOptions as option}
-                            <option value={option.id}
-                                    disabled={currentMenu.id === option.id}>
+                            <option value={option.id} disabled={currentMenu.id === option.id}>
                                 {option.menuName}
                             </option>
                         {/each}
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">选择父级菜单</p>
                 </div>
 
                 <div>
@@ -244,7 +393,6 @@
                             placeholder="User, Settings, List..."
                             class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p class="text-xs text-gray-500 mt-1">图标名称</p>
                 </div>
 
                 {#if currentMenu.menuType !== 'F'}
@@ -267,7 +415,6 @@
                             placeholder="sys:menu:query"
                             class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p class="text-xs text-gray-500 mt-1">权限标识</p>
                 </div>
 
                 <div>
@@ -297,19 +444,3 @@
         </div>
     </div>
 {/if}
-
-<!-- 测试权限指令 -->
-<div class="fixed bottom-4 right-4 flex gap-2">
-    <button use:permission={'sys:user:query'}
-            class="px-4 py-2 bg-green-600 text-white rounded shadow">
-        有权限可见
-    </button>
-    <button use:permission={'sys:user:edit'}
-            class="px-4 py-2 bg-blue-600 text-white rounded shadow">
-        编辑权限
-    </button>
-    <button use:permission={{any: ['sys:user:edit', 'sys:user:remove']}}
-            class="px-4 py-2 bg-yellow-600 text-white rounded shadow">
-        编辑或删除
-    </button>
-</div>
