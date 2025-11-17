@@ -3,89 +3,27 @@ package main
 
 import (
 	"Ruoyi-Go-PocketBase/models"
-	"log"
-	"net/http"
-	"os"
-
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"log"
 )
 
 func main() {
 	app := pocketbase.New()
 	app.OnRecordViewRequest().BindFunc(func(e *core.RecordRequestEvent) error {
-		// e.App
-		// e.Collection
-		// e.Record
-		// and all RequestEvent fields...
 		return e.Next()
 	})
 	app.OnRecordCreateRequest().BindFunc(func(e *core.RecordRequestEvent) error {
-		// e.App
-		// e.Collection
-		// e.Record
-		// and all RequestEvent fields...
 		return e.Next()
 	})
-	// fires for every collection
 	app.OnRecordUpdateRequest().BindFunc(func(e *core.RecordRequestEvent) error {
-		// e.App
-		// e.Collection
-		// e.Record
-		// and all RequestEvent fields...
 		return e.Next()
 	})
 	app.OnRecordDeleteRequest().BindFunc(func(e *core.RecordRequestEvent) error {
-		// e.App
-		// e.Collection
-		// e.Record
-		// and all RequestEvent fields...
 		return e.Next()
 	})
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		// 获取用户权限菜单树
-		se.Router.GET("/api/getUserRouter", func(e *core.RequestEvent) error {
-			info, err := e.RequestInfo()
-			// 获取用户角色
-			roleIdsRaw := info.Auth.Get("role")
-			// 情况1：roleIdsRaw 本身就是 []string
-			roleIds, _ := roleIdsRaw.([]string)
-			// 调用服务获取菜单树
-			menuService := NewMenuService(app)
-			menuTree, err := menuService.GetUserMenuTree(roleIds)
-			if err != nil {
-				return e.JSON(http.StatusInternalServerError, map[string]any{
-					"code":    500,
-					"message": "查询菜单失败",
-					"error":   err.Error(),
-				})
-			}
-			return e.JSON(http.StatusOK, map[string]any{
-				"code":    200,
-				"message": "success",
-				"data":    menuTree,
-			})
-		}).Bind(apis.RequireAuth())
-		se.Router.GET("/api/getAllMenuTree", func(e *core.RequestEvent) error {
-			// 调用服务获取菜单树
-			menuService := NewMenuService(app)
-			menuTree, err := menuService.GetAllMenuTree()
-			if err != nil {
-				return e.JSON(http.StatusInternalServerError, map[string]any{
-					"code":    500,
-					"message": "查询菜单失败",
-					"error":   err.Error(),
-				})
-			}
-			return e.JSON(http.StatusOK, map[string]any{
-				"code":    200,
-				"message": "success",
-				"data":    menuTree,
-			})
-		})
-		se.Router.GET("/", apis.Static(os.DirFS("./pb_public/index.html"), false))
 		return se.Next()
 	})
 	if err := app.Start(); err != nil {

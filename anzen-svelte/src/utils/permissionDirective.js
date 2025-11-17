@@ -1,4 +1,3 @@
-// src/utils/permissionDirective.js
 import {hasAll, hasAny, hasPermission} from "../stores/authStore.js";
 
 export function permission(node, params) {

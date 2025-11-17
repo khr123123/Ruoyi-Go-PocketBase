@@ -1,10 +1,10 @@
 <!-- src/pages/MenuPage.svelte -->
 <script>
-    import TreeTable from '../components/TreeTable.svelte';
     import {onMount} from 'svelte';
-    import {hasPermission} from '../stores/authStore';
-    import {showToast} from '../stores/toastStore';
-    import {listMenu} from "../api/menuApis.js";
+    import {hasPermission} from '../../../stores/authStore';
+    import {showToast} from '../../../stores/toastStore';
+    import {listMenu} from "../../../api/menuApis.js";
+    import TreeTable from "../../../components/TreeTable.svelte";
 
     let menus = [];
     let rawMenus = [];
@@ -215,6 +215,7 @@
     function handlePageChange(event) {
         loadMenus({page: event.detail.page});
     }
+
     /**
      * handleAdd - 处理添加按钮点击
      */

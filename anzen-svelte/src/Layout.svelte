@@ -1,14 +1,14 @@
 <script>
     import Router, {location, push} from "svelte-spa-router";
     import {wrap} from 'svelte-spa-router/wrap';
-    import Home from './pages/UserPage.svelte';
+    import Home from './pages/sys/user/index.svelte';
     import About from './pages/About.svelte';
     import {Chart, IdCard, Logo, Refresh, Settings, SettingsAlt, Users} from './lib/icons';
     import {clearUser, user} from './stores/userStore.js';
     import {logout} from "./api/userApis.js";
     import {showToast} from "./stores/toastStore.js";
-    import Menu from "./pages/MenuPage.svelte";
-    import Role from "./pages/RolePage.svelte";
+    import Menu from "./pages/sys/menu/index.svelte";
+    import Role from "./pages/sys/role/index.svelte";
     import Setting from "./pages/Setting.svelte";
     import {onMount} from "svelte";
     import {myRouter} from "./stores/authStore.js";

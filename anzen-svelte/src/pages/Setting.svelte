@@ -32,10 +32,11 @@
         {label: "路径", key: "path"}
     ];
 </script>
-<button use:permission={''}>kong</button>
-<button use:permission={'sys:user:edit'}>sys:user:edit</button>
-<button use:permission={'sys:user:delete'}>sys:user:delete</button>
-<button use:permission={'sys:user:delete'}>sys:user:delete</button>
-<button use:permission={'sys:user:add'}>sys:user:add</button>
-<button use:permission={'sys:user:add1'}>sys:user:add1</button>
-
+<div>
+    <button use:permission={''}>kong</button>
+    <button use:permission={'sys:user:edit'}>sys:user:edit</button>
+    <button use:permission={'sys:menu:add'}>sys:menu:add</button>
+    <button use:permission={'sys:user:delete'}>sys:user:delete</button>
+    <button use:permission={'sys:user:add'}>sys:user:add</button>
+    <button use:permission={'sys:user:add1'}>sys:user:add1</button>
+</div>

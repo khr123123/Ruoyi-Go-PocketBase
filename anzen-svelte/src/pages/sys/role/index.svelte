@@ -1,10 +1,10 @@
 <!-- src/pages/RolePage.svelte -->
 <script>
-    import DataTable from '../components/DataTable.svelte';
     import {onMount} from 'svelte';
-    import {hasPermission} from '../stores/authStore';
-    import {showToast} from '../stores/toastStore';
-    import {listRole} from "../api/roleApis.js";
+    import {hasPermission} from '../../../stores/authStore';
+    import {showToast} from '../../../stores/toastStore';
+    import {listRole} from "../../../api/roleApis.js";
+    import DataTable from "../../../components/DataTable.svelte";
 
     let roles = [];
     let total = 0;
@@ -74,32 +74,6 @@
         }
     }
 
-    // Load all menus
-    async function loadAllMenus() {
-        try {
-            const response = await fetch('http://127.0.0.1:8090/api/getAllMenuTree', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-            const result = await response.json();
-            if (result.code === 200) {
-                allMenus = flattenMenuTree(result.data);
-            }
-        } catch (error) {
-            console.error('Load menus error:', error);
-        }
-    }
-
-    function flattenMenuTree(tree, result = []) {
-        tree.forEach(node => {
-            result.push(node);
-            if (node.children && node.children.length > 0) {
-                flattenMenuTree(node.children, result);
-            }
-        });
-        return result;
-    }
 
     function handleSearch(event) {
         loadRoles({search: event.detail.search, page: 1});
@@ -238,7 +212,6 @@
 
     onMount(() => {
         loadRoles();
-        loadAllMenus();
     });
 </script>
 
@@ -331,58 +304,58 @@
 {/if}
 
 <!-- Permission Dialog -->
-{#if showPermissionDialog}
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 class="text-lg font-semibold mb-4">
-                Configure Permissions - {currentRole.roleName}
-            </h3>
+<!--{#if showPermissionDialog}-->
+<!--    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">-->
+<!--        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">-->
+<!--            <h3 class="text-lg font-semibold mb-4">-->
+<!--                Configure Permissions - {currentRole.roleName}-->
+<!--            </h3>-->
 
-            <div class="space-y-2 max-h-96 overflow-y-auto border rounded p-4">
-                {#each allMenus as menu}
-                    <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                        <input
-                                type="checkbox"
-                                checked={selectedPermissions.includes(menu.id)}
-                                on:change={() => togglePermission(menu.id)}
-                                class="rounded border-gray-300"
-                        />
-                        <span class="flex-1">
-                            {#if menu.icon}
-                                <i class="{menu.icon} mr-2 text-gray-600"></i>
-                            {/if}
-                            {menu.menuName}
-                        </span>
-                        <span class="text-xs text-gray-500 font-mono">
-                            {menu.permission || '-'}
-                        </span>
-                        <span class="text-xs px-2 py-1 rounded bg-gray-100">
-                            {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'Menu' : 'Button'}
-                        </span>
-                    </label>
-                {/each}
-            </div>
+<!--            <div class="space-y-2 max-h-96 overflow-y-auto border rounded p-4">-->
+<!--                {#each allMenus as menu}-->
+<!--                    <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">-->
+<!--                        <input-->
+<!--                                type="checkbox"-->
+<!--                                checked={selectedPermissions.includes(menu.id)}-->
+<!--                                on:change={() => togglePermission(menu.id)}-->
+<!--                                class="rounded border-gray-300"-->
+<!--                        />-->
+<!--                        <span class="flex-1">-->
+<!--                            {#if menu.icon}-->
+<!--                                <i class="{menu.icon} mr-2 text-gray-600"></i>-->
+<!--                            {/if}-->
+<!--                            {menu.menuName}-->
+<!--                        </span>-->
+<!--                        <span class="text-xs text-gray-500 font-mono">-->
+<!--                            {menu.permission || '-'}-->
+<!--                        </span>-->
+<!--                        <span class="text-xs px-2 py-1 rounded bg-gray-100">-->
+<!--                            {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'Menu' : 'Button'}-->
+<!--                        </span>-->
+<!--                    </label>-->
+<!--                {/each}-->
+<!--            </div>-->
 
-            <div class="mt-4 p-3 bg-blue-50 rounded">
-                <p class="text-sm text-blue-800">
-                    Selected: <strong>{selectedPermissions.length}</strong> permissions
-                </p>
-            </div>
+<!--            <div class="mt-4 p-3 bg-blue-50 rounded">-->
+<!--                <p class="text-sm text-blue-800">-->
+<!--                    Selected: <strong>{selectedPermissions.length}</strong> permissions-->
+<!--                </p>-->
+<!--            </div>-->
 
-            <div class="flex justify-end gap-2 mt-6">
-                <button
-                        on:click={() => showPermissionDialog = false}
-                        class="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                >
-                    Cancel
-                </button>
-                <button
-                        on:click={savePermissions}
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                    Save Permissions
-                </button>
-            </div>
-        </div>
-    </div>
-{/if}
+<!--            <div class="flex justify-end gap-2 mt-6">-->
+<!--                <button-->
+<!--                        on:click={() => showPermissionDialog = false}-->
+<!--                        class="px-4 py-2 border rounded hover:bg-gray-100 transition"-->
+<!--                >-->
+<!--                    Cancel-->
+<!--                </button>-->
+<!--                <button-->
+<!--                        on:click={savePermissions}-->
+<!--                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"-->
+<!--                >-->
+<!--                    Save Permissions-->
+<!--                </button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--{/if}-->

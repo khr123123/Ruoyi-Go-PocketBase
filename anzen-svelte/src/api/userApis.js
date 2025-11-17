@@ -30,7 +30,7 @@ export async function register(user) {
  * 获取当前登录用户信息
  */
 export function getCurrentUser() {
-    return pb.authStore.model;
+    return pb.authStore.record;
 }
 
 /**

@@ -1,8 +1,7 @@
-<!-- src/pages/UserPage.svelte -->
 <script>
-    import DataTable from '../components/DataTable.svelte';
-    import {listUser} from '../api/userApis.js';
-    import {ArrowDown, Check, Circle, Image, Menu} from '../lib/icons';
+    import {listUser} from '../../../api/userApis.js';
+    import {ArrowDown, Check, Circle, Image, Menu} from '../../../lib/icons';
+    import DataTable from "../../../components/DataTable.svelte";
 
     const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
