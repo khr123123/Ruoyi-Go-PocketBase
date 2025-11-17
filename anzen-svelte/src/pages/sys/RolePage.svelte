@@ -1,10 +1,10 @@
 <!-- src/pages/RolePage.svelte -->
 <script>
     import {onMount} from 'svelte';
-    import {hasPermission} from '../../../stores/authStore';
-    import {showToast} from '../../../stores/toastStore';
-    import {listRole} from "../../../api/roleApis.js";
-    import DataTable from "../../../components/DataTable.svelte";
+    import {hasPermission} from '../../stores/authStore.js';
+    import {showToast} from '../../stores/toastStore.js';
+    import {listRole} from "../../api/sysApis.js";
+    import DataTable from "../../components/DataTable.svelte";
 
     let roles = [];
     let total = 0;
@@ -19,8 +19,8 @@
     // Column definitions with operations
     const columns = [
         {key: 'id', label: 'ID', sortable: true, class: 'font-mono text-xs'},
-        {key: 'roleName', label: 'Role Name', sortable: true},
-        {key: 'roleKey', label: 'Role Key', class: 'font-mono text-sm'},
+        {key: 'roleName', label: 'RolePage Name', sortable: true},
+        {key: 'roleKey', label: 'RolePage Key', class: 'font-mono text-sm'},
         {
             key: 'status',
             label: 'Status',
@@ -120,7 +120,7 @@
 
     async function saveRole() {
         if (!currentRole.roleName || !currentRole.roleKey) {
-            showToast('Role name and role key are required', 'error');
+            showToast('RolePage name and role key are required', 'error');
             return;
         }
 
@@ -234,12 +234,12 @@
         on:pageChange={handlePageChange}
 />
 
-<!-- Role Edit Dialog -->
+<!-- RolePage Edit Dialog -->
 {#if showDialog}
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 class="text-lg font-semibold mb-4">
-                {currentRole.id ? 'Edit Role' : 'Add Role'}
+                {currentRole.id ? 'Edit RolePage' : 'Add RolePage'}
             </h3>
 
             <div class="space-y-4">
@@ -330,7 +330,7 @@
 <!--                            {menu.permission || '-'}-->
 <!--                        </span>-->
 <!--                        <span class="text-xs px-2 py-1 rounded bg-gray-100">-->
-<!--                            {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'Menu' : 'Button'}-->
+<!--                            {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'MenuPage' : 'Button'}-->
 <!--                        </span>-->
 <!--                    </label>-->
 <!--                {/each}-->

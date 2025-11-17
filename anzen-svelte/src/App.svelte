@@ -2,26 +2,19 @@
 <script>
     import {wrap} from 'svelte-spa-router/wrap';
     import Router, {replace} from "svelte-spa-router";
-
     import LoginPage from './pages/LoginPage.svelte';
     import Layout from './Layout.svelte';
     import Toast from './components/Toast.svelte';
-
     import {toast} from './stores/toastStore';
     import {user} from "./stores/userStore.js";
     import {myPermissions, myRouter} from "./stores/authStore.js";
-
-    import {getUserRouter} from "./api/menuApis.js";
+    import {getUserRouter} from "./api/sysApis.js";
     import {buildTree, extractMenus, extractPermissions} from "./utils/menuUtils.js";
 
-    let currentUser;
-    user.subscribe(v => currentUser = v);
-
-    /** 路由守卫 **/
+    // 路由守卫
     function authGuard(detail) {
-        const token = currentUser?.token;
+        const token = $user?.token;
         const isLogin = detail.location === '/login';
-
         if (!token && !isLogin) {
             replace('/login');
             return false;
@@ -33,7 +26,7 @@
         return true;
     }
 
-    /** 路由配置 **/
+    // 路由配置
     const routes = {
         '/login': wrap({component: LoginPage}),
         '/*': wrap({
@@ -42,8 +35,8 @@
         })
     }
 
-    /** token 每次变化时自动加载权限与菜单 **/
-    $: if (currentUser?.token) {
+    // token 每次变化时自动加载权限与菜单
+    $: if ($user?.token) {
         loadRouterAndPermission();
     }
 
@@ -58,5 +51,5 @@
 <Router {routes}/>
 
 {#if $toast}
-    <Toast message={$toast.message} type={$toast.type} onClose={() => toast.set(null)}/>
+  <Toast message={$toast.message} type={$toast.type} onClose={() => toast.set(null)}/>
 {/if}

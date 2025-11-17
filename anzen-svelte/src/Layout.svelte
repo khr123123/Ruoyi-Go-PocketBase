@@ -1,344 +1,337 @@
 <script>
     import Router, {location, push} from "svelte-spa-router";
     import {wrap} from 'svelte-spa-router/wrap';
-    import Home from './pages/sys/user/index.svelte';
     import About from './pages/About.svelte';
-    import {Chart, IdCard, Logo, Refresh, Settings, SettingsAlt, Users} from './lib/icons';
+    import {ChevronDown, Logo, Settings, SettingsAlt} from './lib/icons';
     import {clearUser, user} from './stores/userStore.js';
-    import {logout} from "./api/userApis.js";
+    import {logout} from "./api/sysApis.js";
     import {showToast} from "./stores/toastStore.js";
-    import Menu from "./pages/sys/menu/index.svelte";
-    import Role from "./pages/sys/role/index.svelte";
-    import Setting from "./pages/Setting.svelte";
-    import {onMount} from "svelte";
-    import {myRouter} from "./stores/authStore.js";
+    import Setting from './pages/Setting.svelte';
+    import {clearPermissions, myRouter} from "./stores/authStore.js";
 
     const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
-    let sidebarOpen = true;
     let searchQuery = '';
-    const layoutRoutes = {
-        '/': wrap({component: Home}),
-        '/sys_menu': wrap({component: Menu}),
-        '/sys_role': wrap({component: Role}),
-        '/about': wrap({component: About}),
-        '/setting': wrap({component: Setting})
-    }
-    const handleLogout = () => {
-        logout()
-        clearUser()
-        showToast("logout success !", "info")
-        setTimeout(() => push('/login'), 800)
-    }
-    const isActive = (path) => $location === path;
-    onMount(() => {
-        console.log("myrouter", $myRouter)
-    })
+    let filteredRouter = [];
 
+    // 展开状态管理 - 默认全部展开
+    let expandedMenus = {};
+
+    // 生成动态路由
+    $: layoutRoutes = generateRoutes($myRouter);
+    const modules = import.meta.glob('./pages/**/*.svelte');
+
+    function generateRoutes(menuData) {
+        const routes = {};
+        // 添加动态菜单路由
+        if (menuData && menuData.length > 0) {
+            menuData.forEach(menu => {
+                if (menu.children && menu.children.length > 0) {
+                    menu.children.forEach(child => {
+                        if (child.url && child.menuType === 'C') {
+                            const path = `./pages${child.url}.svelte`;
+                            routes[child.url] = wrap({
+                                asyncComponent: modules[path]
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        // 添加固定路由
+        routes['/about'] = wrap({component: About});
+        routes['/setting'] = wrap({component: Setting});
+        return routes;
+    }
+
+    // 初始化展开状态 - 默认全部展开
+    $: if ($myRouter && $myRouter.length > 0 && Object.keys(expandedMenus).length === 0) {
+        const allExpanded = {};
+        $myRouter.forEach(item => {
+            if (item.menuType === 'M' && item.children && item.children.length > 0) {
+                allExpanded[String(item.id)] = true;
+            }
+        });
+        expandedMenus = allExpanded;
+    }
+
+    // 搜索过滤
+    $: {
+        if (searchQuery.trim() === '') {
+            filteredRouter = $myRouter;
+        } else {
+            const query = searchQuery.toLowerCase();
+            filteredRouter = $myRouter.map(menu => {
+                if (menu.menuType === 'M' && menu.children) {
+                    const filteredChildren = menu.children.filter(child =>
+                        child.menuName.toLowerCase().includes(query) ||
+                        child.url?.toLowerCase().includes(query)
+                    );
+
+                    if (filteredChildren.length > 0 || menu.menuName.toLowerCase().includes(query)) {
+                        return {
+                            ...menu,
+                            children: filteredChildren
+                        };
+                    }
+                }
+                return null;
+            }).filter(Boolean);
+
+            // 搜索时自动展开所有匹配的菜单
+            if (filteredRouter.length > 0) {
+                const expanded = {};
+                filteredRouter.forEach(item => {
+                    if (item.menuType === 'M') {
+                        expanded[String(item.id)] = true;
+                    }
+                });
+                expandedMenus = expanded;
+            }
+        }
+    }
+
+    // 切换菜单展开状态
+    function toggleMenu(menuId) {
+        const key = String(menuId);
+        expandedMenus = {
+            ...expandedMenus,
+            [key]: !expandedMenus[key]
+        };
+    }
+
+    // 检查菜单是否展开
+    function isMenuExpanded(menuId) {
+        return expandedMenus[String(menuId)] === true;
+    }
+
+    // 处理登出
+    const handleLogout = () => {
+        logout();
+        clearUser();
+        clearPermissions();
+        showToast("Logout successful!", "info");
+        setTimeout(() => push('/login'), 800);
+    };
+
+    // 检查路由是否激活
+    const isActive = (path) => {
+        console.log("fuck")
+        console.log(path)
+        console.log($location)
+        return $location === path;
+    }
+
+    // 获取页面标题
+    function getPageTitle(location) {
+        const titleMap = {
+            '/sys/user/index': 'User Management',
+            '/sys/role/index': 'Role Management',
+            '/sys/menu/index': 'Menu Management',
+            '/sys/log/index': 'Log Management',
+            '/sys/monitor/index': 'Server Monitor',
+            '/sys/db/index': 'Database Management',
+            '/sys/redis/index': 'Redis Monitor',
+            '/setting': 'Settings',
+            '/about': 'About'
+        };
+        return titleMap[location] || 'Dashboard';
+    }
 </script>
 
-<div class="layout">
-    <!-- Sidebar -->
-    <aside class="sidebar" class:collapsed={!sidebarOpen}>
-        <div class="sidebar-header">
-            <div class="logo-container">
-                <Logo size={32}/>
-                <span class="tracking-wide">RUOYI-PB</span>
-            </div>
-            <input
-                    type="text"
-                    placeholder="Search collections..."
-                    class="search-input"
-                    bind:value={searchQuery}
-            />
-        </div>
-        <nav class="sidebar-nav">
-            <div class="nav-section">
-                <a href="#/" class="nav-item" class:active={isActive('/')}>
-                    <span class="nav-icon">
-                        <Users size={20}/>
-                    </span>
-                    <span class="nav-text">users</span>
-                </a>
-                <a href="#/sys_menu" class="nav-item" class:active={isActive('/sys_menu')}>
-                    <span class="nav-icon">
-                        <Chart size={20}/>
-                    </span>
-                    <span class="nav-text">sys_menu</span>
-                </a>
-                <a href="#/sys_role" class="nav-item" class:active={isActive('/sys_role')}>
-                    <span class="nav-icon">
-                        <IdCard size={20}/>
-                    </span>
-                    <span class="nav-text">sys_role</span>
-                </a>
-            </div>
-            <div class="nav-section">
-                <div class="section-label">System</div>
-                <a href="#/setting" class="nav-item" class:active={isActive('/setting')}>
-                    <span class="nav-icon">
-                        <Settings size={20}/>
-                    </span>
-                    <span class="nav-text">Settings</span>
-                </a>
-                <a href="#/about" class="nav-item" class:active={isActive('/about')}>
-                    <span class="nav-icon">
-                        <Settings size={20}/>
-                    </span>
-                    <span class="nav-text">Settings</span>
-                </a>
-            </div>
-        </nav>
-        <div class="sidebar-footer p-3 border-t border-gray-200">
-            {#if $user && $user.id}
-                <div class="flex items-center gap-3 cursor-default">
-                    <!-- 头像 -->
-                    <div class="w-8 h-8 rounded-full overflow-hidden">
-                        <img src="{AVATAR_PREFIX+$user.id+'/'+$user.avatar}" alt="avatar"
-                             class="w-full h-full object-cover"/>
-                    </div>
-                    <!-- 用户名 -->
-                    <span class="text-sm font-medium text-gray-800">{$user.name}</span>
+<div class="flex h-screen bg-gray-50">
+  <!-- Sidebar -->
+  <aside class="flex flex-col bg-white border-r border-gray-200 w-42 shadow-sm">
+    <!-- Logo 区域 -->
+    <div class="p-5 border-b border-gray-200">
+      <div class="flex items-center justify-center mb-4 text-gray-800">
+        <Logo size={32}/>
+        <span class="text-lg font-semibold tracking-wide ml-2">RUOYI-PB</span>
+      </div>
+
+      <div class="relative">
+        <input
+                type="text"
+                placeholder="Search menus..."
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all"
+                bind:value={searchQuery}
+        />
+        {#if searchQuery}
+          <button
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  on:click={() => searchQuery = ''}
+          >
+            ✕
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    <!-- 导航菜单 -->
+    <nav class="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      {#if filteredRouter && filteredRouter.length > 0}
+        {#each filteredRouter as item (item.id)}
+          {#if item.menuType === 'M'}
+            <div class="mb-1">
+              <!-- 父级菜单 -->
+              <button
+                      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-100 transition-all duration-200 group"
+                      type="button"
+                      on:click={() => toggleMenu(item.id)}
+              >
+                                <span class="flex items-center justify-center w-5 text-gray-500 group-hover:text-gray-700">
+                                    {#if item.icon}
+                                        <!-- 这里可以根据 icon 名称动态渲染图标 -->
+                                        <span class="text-lg">{item.icon === 'Settings' ? '⚙️' : '📁'}</span>
+                                    {:else}
+                                        📁
+                                    {/if}
+                                </span>
+                <span class="flex-1 text-left">{item.menuName}</span>
+                {#if item.children && item.children.length > 0}
+                                    <span
+                                            class="transform transition-transform duration-200 text-gray-400 {isMenuExpanded(item.id) ? 'rotate-180' : ''}"
+                                    >
+                                        <ChevronDown size={16}/>
+                                    </span>
+                {/if}
+              </button>
+
+              <!-- 子菜单 -->
+              {#if item.children && item.children.length > 0 && isMenuExpanded(item.id)}
+                <div class="ml-2 mt-1 space-y-0.5 border-l-2 border-gray-200 pl-2">
+                  {#each item.children as child (child.id)}
+                    {#if child.menuType === 'C'}
+                      <a
+                              href="#{child.url}"
+                              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 {isActive(child.url) ? 'bg-blue-50 text-blue-600 font-medium border-l-2 border-blue-500 -ml-[2px]' : ''}"
+                      >
+                                                <span class="flex items-center justify-center w-5 text-xs">
+                                                    {child.icon === 'User' ? '👤' :
+                                                        child.icon === 'CustomerService' ? '👔' :
+                                                            child.icon === 'List' ? '📋' :
+                                                                child.icon === 'CalendarClock' ? '📅' :
+                                                                    child.icon === 'Eye' ? '👁️' : '•'}
+                                                </span>
+                        <span>{child.menuName}</span>
+                      </a>
+                    {/if}
+                  {/each}
                 </div>
-            {/if}
+              {/if}
+            </div>
+          {/if}
+        {/each}
+      {:else}
+        <div class="text-center text-gray-400 text-sm py-8">
+          {searchQuery ? 'No matching menus' : 'No menus available'}
         </div>
-    </aside>
-    <!-- Main Content -->
-    <main class="main-content">
-        <header class="content-header">
-            <div class="breadcrumb">
-                <span class="breadcrumb-item">Collections</span>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item active">
-                    {$location === '/' ? 'users' : $location.slice(1)}
+      {/if}
+
+      <!-- 固定系统菜单 -->
+      <div class="mt-6 pt-4 border-t border-gray-200">
+        <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold px-3 py-2">
+          System
+        </div>
+        <a
+                href="#/setting"
+                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 {isActive('/setting') ? 'bg-blue-50 text-blue-600 font-medium' : ''}"
+        >
+                    <span class="flex items-center justify-center w-5">
+                        <Settings size={18}/>
+                    </span>
+          <span>Settings</span>
+        </a>
+        <a
+                href="#/about"
+                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 {isActive('/about') ? 'bg-blue-50 text-blue-600 font-medium' : ''}"
+        >
+                    <span class="flex items-center justify-center w-5">
+                        <Settings size={18}/>
+                    </span>
+          <span>About</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- 底部用户信息 -->
+    <div class="p-4 border-t border-gray-200 bg-gray-50">
+      {#if $user?.id}
+        <div class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+          <div class="w-9 h-9 rounded-full overflow-hidden ring-2 ring-gray-200">
+            <img
+                    src="{AVATAR_PREFIX}{$user.id}/{$user.avatar}"
+                    alt="Avatar"
+                    class="w-full h-full object-cover"
+            />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-800 truncate">
+              {$user.name}
+            </div>
+            <div class="text-xs text-gray-500 truncate">
+              {$user.email || 'User'}
+            </div>
+          </div>
+        </div>
+      {/if}
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2 text-sm">
+        <span class="text-gray-500">Collections</span>
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-800 font-medium">
+                    {getPageTitle($location)}
                 </span>
-            </div>
-            <div class="header-actions">
-                <button class="header-btn" title="Settings">
-                    <SettingsAlt size={20}/>
-                </button>
-                <button class="header-btn" title="Refresh">
-                    <Refresh size={20}/>
-                </button>
-                <button class="logout-btn" on:click={handleLogout}>
-                    Logout
-                </button>
-            </div>
-        </header>
-        <div class="content-body">
-            <Router routes={layoutRoutes}/>
-        </div>
-    </main>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button
+                class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:text-gray-900 hover:border-gray-400 hover:bg-gray-50 transition-all"
+                title="Settings"
+        >
+          <SettingsAlt size={20}/>
+        </button>
+
+        <button
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-800 hover:text-white hover:border-gray-800 transition-all duration-200"
+                on:click={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- 内容区域 -->
+    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+      <div class="max-w-7xl mx-auto">
+        <Router routes={layoutRoutes}/>
+      </div>
+    </div>
+  </main>
 </div>
 
 <style>
-    .layout {
-        display: flex;
-        height: 100vh;
-        background-color: #f7f7f7;
+    /* 自定义滚动条样式 */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
     }
 
-    /* Sidebar Styles */
-    .sidebar {
-        width: 200px;
-        background: white;
-        border-right: 1px solid #e5e5e5;
-        display: flex;
-        flex-direction: column;
-        transition: width 0.3s;
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
     }
 
-    .sidebar.collapsed {
-        width: 60px;
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
     }
 
-    .sidebar-header {
-        padding: 20px 16px;
-        border-bottom: 1px solid #e5e5e5;
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
     }
-
-    .logo-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 16px;
-        color: #2b3034;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        font-size: 13px;
-        background-color: #f7f7f7;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: #5a9fd4;
-        background-color: white;
-    }
-
-    .sidebar-nav {
-        flex: 1;
-        overflow-y: auto;
-        padding: 12px 8px;
-    }
-
-    .nav-section {
-        margin-bottom: 20px;
-    }
-
-    .section-label {
-        font-size: 11px;
-        color: #999;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 8px 12px;
-        font-weight: 600;
-    }
-
-    .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border-radius: 6px;
-        color: #2b3034;
-        text-decoration: none;
-        font-size: 14px;
-        transition: background-color 0.2s;
-        margin-bottom: 2px;
-    }
-
-    .nav-item:hover {
-        background-color: #f0f4f8;
-    }
-
-    .nav-item.active {
-        background-color: #e8f0f7;
-        color: #2b3034;
-        font-weight: 500;
-    }
-
-    .nav-icon {
-        font-size: 16px;
-        width: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .sidebar-footer {
-        padding: 16px;
-        border-top: 1px solid #e5e5e5;
-    }
-
-    .new-collection-btn {
-        width: 100%;
-        padding: 10px 16px;
-        border: 1px solid #e5e5e5;
-        border-radius: 6px;
-        background: white;
-        color: #2b3034;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all 0.2s;
-    }
-
-    .new-collection-btn:hover {
-        border-color: #2b3034;
-        background-color: #f7f7f7;
-    }
-
-    /* Main Content Styles */
-    .main-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .content-header {
-        background: white;
-        border-bottom: 1px solid #e5e5e5;
-        padding: 16px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-    }
-
-    .breadcrumb-item {
-        color: #666;
-    }
-
-    .breadcrumb-item.active {
-        color: #2b3034;
-        font-weight: 500;
-    }
-
-    .breadcrumb-separator {
-        color: #ccc;
-    }
-
-    .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .header-btn {
-        padding: 8px;
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        background: white;
-        color: #666;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .header-btn:hover {
-        border-color: #2b3034;
-        color: #2b3034;
-    }
-
-    .logout-btn {
-        padding: 8px 16px;
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        background: white;
-        color: #2b3034;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .logout-btn:hover {
-        background-color: #2b3034;
-        color: white;
-    }
-
-    .content-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 24px;
-    }
-
 </style>

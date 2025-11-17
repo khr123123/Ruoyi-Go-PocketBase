@@ -1,13 +1,10 @@
-// userApis.js
-// PocketBase API 封装（登录、注册、获取用户信息等）
-
+// sysApis.js　　PocketBase API 封装
 import PocketBase from "pocketbase";
 
 // 初始化 PocketBase 客户端
 const pb = new PocketBase("http://127.0.0.1:8090");
 
 // --- 用户相关 API ---
-
 /**
  * 登录
  * @param {string} email
@@ -78,6 +75,34 @@ export async function listUser(page = 1, perPage = 20, sort = '-created', filter
         filter,     // PocketBase filter，例："email ~ 'gmail'"
         fields: 'id,email,emailVisibility,verified,name,avatar,created,updated,role', //你要的字段
         expand: 'role', //如果你想取角色表
+    });
+}
+
+export async function listMenu(page = 1, perPage = 20, sort = '-created', filter = '') {
+    return await pb.collection('sys_menu').getList(page, perPage, {
+        sort, filter, fields: 'id,menuName,menuType,orderNum,permission,parentId,url,icon,created,updated',
+    });
+}
+
+export async function getUserRouter() {
+    const user = pb.authStore.record;
+    return await pb.collection("users").getOne(user.id, {
+        expand: "role,role.permission",
+    });
+}
+
+/**
+ *  获取菜单列表带排序
+ * @param page
+ * @param perPage
+ * @param sort
+ * @param filter
+ */
+export async function listRole(page = 1, perPage = 20, sort = '-created', filter = '') {
+    return await pb.collection('sys_role').getList(page, perPage, {
+        sort,       // 排序字段，例如："-created", "email", "name"
+        filter,     // PocketBase filter，例："email ~ 'gmail'"
+        fields: 'id,roleName,permission,created,updated',
     });
 }
 

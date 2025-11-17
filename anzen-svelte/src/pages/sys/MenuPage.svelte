@@ -1,11 +1,9 @@
-<!-- src/pages/MenuPage.svelte -->
 <script>
     import {onMount} from 'svelte';
-    import {hasPermission} from '../../../stores/authStore';
-    import {showToast} from '../../../stores/toastStore';
-    import {listMenu} from "../../../api/menuApis.js";
-    import TreeTable from "../../../components/TreeTable.svelte";
-
+    import {hasPermission} from '../../stores/authStore.js';
+    import {showToast} from '../../stores/toastStore.js';
+    import TreeTable from "../../components/TreeTable.svelte";
+    import {listMenu} from "../../api/sysApis.js";
     let menus = [];
     let rawMenus = [];
     let showDialog = false;
@@ -21,7 +19,7 @@
     const columns = [
         {
             key: 'menuName',        // 数据字段名
-            label: 'Menu Name',     // 表头显示
+            label: 'MenuPage Name',     // 表头显示
             sortable: true,         // 支持排序
             visible: true           // 默认显示
         },
@@ -116,7 +114,7 @@
      * 用于编辑对话框的父菜单选择器
      */
     function buildParentOptions() {
-        parentMenuOptions = [{id: '0', menuName: 'Root Menu'}];
+        parentMenuOptions = [{id: '0', menuName: 'Root MenuPage'}];
         rawMenus.forEach(menu => {
             if (menu.menuType === 'M' || menu.menuType === 'C') {
                 parentMenuOptions.push(menu);
@@ -313,7 +311,7 @@
         data={treeData}
         columns={columnConfig}
         searchPlaceholder="Search..."
-        addButtonText="Add Menu"
+        addButtonText="Add MenuPage"
         showAddButton={true}
         showCheckbox={true}
         actions={['edit', 'delete']}
@@ -346,7 +344,7 @@
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 class="text-lg font-semibold mb-4">
-                {currentMenu.id ? 'Edit Menu' : 'Add Menu'}
+                {currentMenu.id ? 'Edit MenuPage' : 'Add MenuPage'}
             </h3>
 
             <div class="space-y-4">
