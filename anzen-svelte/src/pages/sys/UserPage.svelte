@@ -31,8 +31,8 @@
 
     // 当前用户头像 URL
     $: currentAvatarUrl = currentUser?.id && currentUser?.avatar
-          ? `${AVATAR_PREFIX}${currentUser.id}/${currentUser.avatar}`
-          : null;
+        ? `${AVATAR_PREFIX}${currentUser.id}/${currentUser.avatar}`
+        : null;
 
     const columns = [
         {key: 'id', label: 'ID', icon: ArrowDown, sortable: true, class: "font-mono"},
@@ -326,94 +326,94 @@
 
 <!-- 用户表格 -->
 <DataTable
-      data={users}
-      {total}
-      {columns}
-      {page}
-      searchPlaceholder="搜索邮箱或姓名..."
-      addButtonText="添加用户"
-      actions={{ add: "sys:user:add", edit: "sys:user:edit", delete: "sys:user:delete" }}
-      on:add={handleAdd}
-      on:edit={handleEdit}
-      on:delete={handleDelete}
-      on:search={handleSearch}
-      on:sort={handleSort}
-      on:pageChange={handlePageChange}
+        data={users}
+        {total}
+        {columns}
+        {page}
+        searchPlaceholder="Search email or userName..."
+        addButtonText="Add User"
+        actions={{ add: "sys:user:add", edit: "sys:user:edit", delete: "sys:user:delete" }}
+        on:add={handleAdd}
+        on:edit={handleEdit}
+        on:delete={handleDelete}
+        on:search={handleSearch}
+        on:sort={handleSort}
+        on:pageChange={handlePageChange}
 />
 
 <!-- 用户编辑/新增抽屉 -->
-<Drawer show={showDialog} title={currentUser?.id ? '编辑用户' : '添加用户'} position="right"
+<Drawer show={showDialog} title={currentUser?.id ? 'Edit User' : 'Add User'} position="right"
         on:close={() => showDialog = false} width="550px">
     <form on:submit|preventDefault={saveUserHandler} class="space-y-4">
 
-        <!-- 头像上传区域 -->
+        <!-- Avatar Upload Area -->
         <div>
-            <label class="block text-sm font-medium mb-2">头像</label>
+            <label class="block text-sm font-medium mb-2">Avatar</label>
             <div class="flex items-start gap-4">
-                <!-- 当前头像预览 -->
+                <!-- Avatar preview -->
                 <div class="flex-shrink-0">
                     {#if avatarPreview}
-                        <!-- 新选择的头像预览 -->
+                        <!-- New selected avatar preview -->
                         <div class="relative group">
                             <img
-                                  src={avatarPreview}
-                                  alt="Avatar Preview"
-                                  class="w-20 h-20 rounded-full object-cover border-2 border-blue-500"
+                                    src={avatarPreview}
+                                    alt="Avatar Preview"
+                                    class="w-20 h-20 rounded-full object-cover border-2 border-blue-500"
                             />
                             <button
-                                  type="button"
-                                  on:click={removeAvatar}
-                                  class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="移除"
+                                    type="button"
+                                    on:click={removeAvatar}
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Remove"
                             >
                                 <X class="w-4 h-4"/>
                             </button>
                         </div>
                     {:else if currentAvatarUrl && currentUser.avatar}
-                        <!-- 现有头像 -->
+                        <!-- Existing avatar -->
                         <div class="relative group">
                             <img
-                                  src={currentAvatarUrl}
-                                  alt="Current Avatar"
-                                  class="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                                    src={currentAvatarUrl}
+                                    alt="Current Avatar"
+                                    class="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
                             />
                             <button
-                                  type="button"
-                                  on:click={deleteExistingAvatar}
-                                  class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="删除头像"
+                                    type="button"
+                                    on:click={deleteExistingAvatar}
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Delete avatar"
                             >
                                 <X class="w-4 h-4"/>
                             </button>
                         </div>
                     {:else}
-                        <!-- 默认头像占位符 -->
+                        <!-- Default placeholder -->
                         <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-semibold">
                             {currentUser?.name?.charAt(0)?.toUpperCase() || currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                     {/if}
                 </div>
 
-                <!-- 上传按钮 -->
+                <!-- Upload button -->
                 <div class="flex-1">
                     <input
-                          type="file"
-                          bind:this={avatarInput}
-                          on:change={handleAvatarSelect}
-                          accept="image/jpeg,image/png,image/gif,image/webp"
-                          class="hidden"
-                          id="avatar-upload"
+                            type="file"
+                            bind:this={avatarInput}
+                            on:change={handleAvatarSelect}
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            class="hidden"
+                            id="avatar-upload"
                     />
                     <label
-                          for="avatar-upload"
-                          class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                            for="avatar-upload"
+                            class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition"
                     >
                         <Upload class="w-4 h-4"/>
-                        <span>选择图片</span>
+                        <span>Select Image</span>
                     </label>
                     <p class="text-xs text-gray-500 mt-2">
-                        支持 JPG、PNG、GIF、WebP 格式<br/>
-                        最大 5MB
+                        Supports JPG, PNG, GIF, WebP<br/>
+                        Max size: 5MB
                     </p>
                 </div>
             </div>
@@ -422,26 +422,26 @@
         <!-- Email -->
         <div>
             <label class="block text-sm font-medium mb-1">
-                邮箱 <span class="text-red-500">*</span>
+                Email <span class="text-red-500">*</span>
             </label>
             <input
-                  type="email"
-                  bind:value={currentUser.email}
-                  placeholder="请输入邮箱"
-                  required
-                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="email"
+                    bind:value={currentUser.email}
+                    placeholder="Enter email"
+                    required
+                    class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p class="text-xs text-gray-500 mt-1">用于登录和接收通知</p>
+            <p class="text-xs text-gray-500 mt-1">Used for login and notifications</p>
         </div>
 
         <!-- Name -->
         <div>
-            <label class="block text-sm font-medium mb-1">姓名</label>
+            <label class="block text-sm font-medium mb-1">Name</label>
             <input
-                  type="text"
-                  bind:value={currentUser.name}
-                  placeholder="请输入姓名"
-                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="text"
+                    bind:value={currentUser.name}
+                    placeholder="Enter name"
+                    class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
         </div>
 
@@ -449,36 +449,36 @@
         <div class="space-y-3">
             <div>
                 <label class="block text-sm font-medium mb-1">
-                    密码
+                    Password
                     {#if !currentUser.id}
                         <span class="text-red-500">*</span>
                     {:else}
-                        <span class="text-gray-500 text-xs">(留空表示不修改)</span>
+                        <span class="text-gray-500 text-xs">(Leave blank to keep unchanged)</span>
                     {/if}
                 </label>
                 <input
-                      type="password"
-                      bind:value={currentUser.password}
-                      placeholder={currentUser.id ? '留空表示不修改' : '至少8个字符'}
-                      minlength="8"
-                      class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        type="password"
+                        bind:value={currentUser.password}
+                        placeholder={currentUser.id ? 'Leave blank to keep unchanged' : 'At least 8 characters'}
+                        minlength="8"
+                        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">
-                    确认密码
+                    Confirm Password
                     {#if !currentUser.id}<span class="text-red-500">*</span>{/if}
                 </label>
                 <input
-                      type="password"
-                      bind:value={currentUser.passwordConfirm}
-                      placeholder="请再次输入密码"
-                      minlength="8"
-                      class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        type="password"
+                        bind:value={currentUser.passwordConfirm}
+                        placeholder="Re-enter password"
+                        minlength="8"
+                        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
             {#if !currentUser.id}
-                <p class="text-xs text-gray-500">密码至少8个字符</p>
+                <p class="text-xs text-gray-500">Password must be at least 8 characters</p>
             {/if}
         </div>
 
@@ -486,32 +486,32 @@
         <div class="space-y-2">
             <label class="flex items-center gap-2 cursor-pointer">
                 <input
-                      type="checkbox"
-                      bind:checked={currentUser.emailVisibility}
-                      class="rounded border-gray-300 cursor-pointer"
+                        type="checkbox"
+                        bind:checked={currentUser.emailVisibility}
+                        class="rounded border-gray-300 cursor-pointer"
                 />
-                <span class="text-sm">邮箱可见</span>
-                <span class="text-xs text-gray-500">（其他用户是否可以看到此邮箱）</span>
+                <span class="text-sm">Email Visible</span>
+                <span class="text-xs text-gray-500">(Whether other users can see this email)</span>
             </label>
 
             {#if currentUser.id}
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input
-                          type="checkbox"
-                          bind:checked={currentUser.verified}
-                          class="rounded border-gray-300 cursor-pointer"
+                            type="checkbox"
+                            bind:checked={currentUser.verified}
+                            class="rounded border-gray-300 cursor-pointer"
                     />
-                    <span class="text-sm">已验证</span>
-                    <span class="text-xs text-gray-500">（邮箱验证状态）</span>
+                    <span class="text-sm">Verified</span>
+                    <span class="text-xs text-gray-500">(Email verification status)</span>
                 </label>
             {:else}
-                <p class="text-xs text-gray-500">新用户创建后需要验证邮箱</p>
+                <p class="text-xs text-gray-500">New users need to verify their email after creation</p>
             {/if}
         </div>
 
         <!-- Roles -->
         <div use:permission={"sys:user:role"} class="space-y-1">
-            <label class="block text-sm font-medium mb-1">角色</label>
+            <label class="block text-sm font-medium mb-1">Roles</label>
             <div class="border rounded px-3 py-2 min-h-[100px] focus-within:ring-2 focus-within:ring-blue-500">
                 {#if selectedRoles.length > 0}
                     <div class="flex flex-wrap gap-1 mb-2">
@@ -519,9 +519,9 @@
                             <span class="flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">
                                 {r.roleName}
                                 <button
-                                      type="button"
-                                      class="ml-1 hover:text-blue-900 font-bold"
-                                      on:click={() => removeRole(r.id)}
+                                        type="button"
+                                        class="ml-1 hover:text-blue-900 font-bold"
+                                        on:click={() => removeRole(r.id)}
                                 >×</button>
                             </span>
                         {/each}
@@ -530,11 +530,11 @@
 
                 {#if allRoles.length > 0}
                     <select
-                          bind:value={roleSelectValue}
-                          on:change={(e) => addRole(e.target.value)}
-                          class="w-full border rounded px-2 py-1 focus:ring-0 focus:outline-none text-sm"
+                            bind:value={roleSelectValue}
+                            on:change={(e) => addRole(e.target.value)}
+                            class="w-full border rounded px-2 py-1 focus:ring-0 focus:outline-none text-sm"
                     >
-                        <option value="">选择角色...</option>
+                        <option value="">Select role...</option>
                         {#each allRoles as role (role.id)}
                             {#if !currentUser.role.includes(role.id)}
                                 <option value={role.id}>{role.roleName}</option>
@@ -542,25 +542,25 @@
                         {/each}
                     </select>
                 {:else}
-                    <p class="text-sm text-gray-500">暂无可用角色</p>
+                    <p class="text-sm text-gray-500">No available roles</p>
                 {/if}
             </div>
         </div>
 
-        <!-- 底部按钮 -->
+        <!-- Buttons -->
         <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
             <button
-                  type="button"
-                  on:click={() => { showDialog = false; resetAvatarUpload(); }}
-                  class="px-4 py-2 border rounded hover:bg-gray-50 transition"
+                    type="button"
+                    on:click={() => { showDialog = false; resetAvatarUpload(); }}
+                    class="px-4 py-2 border rounded hover:bg-gray-50 transition"
             >
-                取消
+                Cancel
             </button>
             <button
-                  type="submit"
-                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
             >
-                保存
+                Save
             </button>
         </div>
     </form>
