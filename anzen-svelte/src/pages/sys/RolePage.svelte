@@ -1,10 +1,12 @@
 <!-- src/pages/RolePage.svelte -->
 <script>
     import {onMount} from 'svelte';
-    import {hasPermission} from '../../stores/authStore.js';
     import {showToast} from '../../stores/toastStore.js';
-    import {listRole} from "../../api/sysApis.js";
+    import {deleteRole, listMenu, listRole, saveRole, saveRolePermissions} from "../../api/sysApis.js";
     import DataTable from "../../components/DataTable.svelte";
+    import {ArrowDown, Image, Menu} from "../../lib/icons/index.js";
+    import Drawer from "../../components/Drawer.svelte";
+    import {confirmDialog} from "../../stores/confirmStore.js";
 
     let roles = [];
     let total = 0;
@@ -18,22 +20,11 @@
 
     // Column definitions with operations
     const columns = [
-        {key: 'id', label: 'ID', sortable: true, class: 'font-mono text-xs'},
-        {key: 'roleName', label: 'RolePage Name', sortable: true},
-        {key: 'roleKey', label: 'RolePage Key', class: 'font-mono text-sm'},
-        {
-            key: 'status',
-            label: 'Status',
-            render: (v) => {
-                const isNormal = v === 'normal';
-                return `<span class="px-2 py-1 text-xs rounded ${isNormal ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-                    ${isNormal ? 'Enabled' : 'Disabled'}
-                </span>`;
-            }
-        },
+        {key: 'id', label: 'ID', icon: ArrowDown, sortable: true, class: 'font-mono'},
+        {key: 'roleName', label: 'Role Name', icon: Menu, sortable: true, class: "text-xs"},
         {
             key: 'permission',
-            label: 'Permissions',
+            label: 'Permissions', icon: Image,
             render: (v) => {
                 if (!v || v.length === 0) return '<span class="text-gray-400 text-xs">No permissions</span>';
                 return `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">${v.length} items</span>`;
@@ -44,19 +35,15 @@
             label: 'Created',
             class: 'text-xs text-gray-600',
             render: (v) => new Date(v).toLocaleString('zh-CN')
+        },
+        {
+            key: 'updated',
+            label: 'Updated',
+            class: 'text-xs text-gray-600',
+            render: (v) => new Date(v).toLocaleString('zh-CN')
         }
     ];
 
-    // Custom action buttons
-    const customActions = [
-        {
-            label: 'Permissions',
-            icon: '🔐',
-            class: 'text-purple-600 hover:text-purple-800',
-            show: () => hasPermission('system:role:edit'),
-            onClick: handleConfigPermission
-        }
-    ];
 
     // Load roles
     async function loadRoles(params = {}) {
@@ -74,18 +61,9 @@
         }
     }
 
-
-    function handleSearch(event) {
-        loadRoles({search: event.detail.search, page: 1});
-    }
-
-    function handleSort(event) {
-        loadRoles({sort: event.detail.sort, page: event.detail.page});
-    }
-
-    function handlePageChange(event) {
-        loadRoles({page: event.detail.page});
-    }
+    const handleSearch = (event) => loadRoles({search: event.detail.search, page: 1});
+    const handleSort = (event) => loadRoles({sort: event.detail.sort, page: event.detail.page});
+    const handlePageChange = (event) => loadRoles({page: event.detail.page});
 
     function handleAdd() {
         currentRole = {
@@ -98,12 +76,14 @@
         showDialog = true;
     }
 
-    function handleEdit(role) {
+    function handleEdit(event) {
+        const role = event.detail
         currentRole = {...role};
         showDialog = true;
     }
 
-    function handleConfigPermission(role) {
+    function handelAssignPerm(event) {
+        const role = event.detail
         currentRole = {...role};
         selectedPermissions = role.permission || [];
         showPermissionDialog = true;
@@ -118,244 +98,121 @@
         }
     }
 
-    async function saveRole() {
-        if (!currentRole.roleName || !currentRole.roleKey) {
-            showToast('RolePage name and role key are required', 'error');
-            return;
-        }
-
+    async function saveRoleHandler() {
         try {
-            const url = currentRole.id
-                ? `http://127.0.0.1:8090/api/collections/sys_role/records/${currentRole.id}`
-                : 'http://127.0.0.1:8090/api/collections/sys_role/records';
-            const method = currentRole.id ? 'PATCH' : 'POST';
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(currentRole)
-            });
-
-            if (response.ok) {
-                showToast('Saved successfully', 'success');
-                showDialog = false;
-                loadRoles();
-            } else {
-                const error = await response.json();
-                showToast(`Save failed: ${error.message}`, 'error');
-            }
+            await saveRole(currentRole);
+            showToast('Saved successfully', 'success');
+            showDialog = false;
+            loadRoles({page});
         } catch (error) {
             console.error('Save error:', error);
             showToast('Operation failed', 'error');
         }
     }
 
-    async function savePermissions() {
+    async function savePermissionsHandler() {
         try {
-            currentRole.permission = selectedPermissions;
-
-            const response = await fetch(
-                `http://127.0.0.1:8090/api/collections/sys_role/records/${currentRole.id}`,
-                {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({permission: selectedPermissions})
-                }
-            );
-
-            if (response.ok) {
-                showToast('Permissions saved successfully', 'success');
-                showPermissionDialog = false;
-                loadRoles();
-            } else {
-                showToast('Failed to save permissions', 'error');
-            }
+            await saveRolePermissions(currentRole.id, selectedPermissions);
+            showToast('Permissions saved successfully', 'success');
+            showPermissionDialog = false;
+            loadRoles({page});
         } catch (error) {
             console.error('Save permissions error:', error);
             showToast('Operation failed', 'error');
         }
     }
 
-    async function handleDelete(role) {
-        if (!confirm(`Are you sure to delete role "${role.roleName}"?`)) {
-            return;
-        }
-
+    async function handleDelete(event) {
+        const role = event.detail
+        const ok = await confirmDialog(`Are you sure to delete role "${role.roleName}"?`);
+        if (!ok) return;
         try {
-            const response = await fetch(
-                `http://127.0.0.1:8090/api/collections/sys_role/records/${role.id}`,
-                {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                }
-            );
-
-            if (response.ok) {
-                showToast('Deleted successfully', 'success');
-                loadRoles();
-            } else {
-                showToast('Delete failed', 'error');
-            }
+            await deleteRole(role.id);
+            showToast('Deleted successfully', 'success');
+            loadRoles({page});
         } catch (error) {
             console.error('Delete error:', error);
             showToast('Operation failed', 'error');
         }
     }
 
-    onMount(() => {
+
+    onMount(async () => {
         loadRoles();
+        const res = await listMenu(1, 500);
+        allMenus = res.items || [];
     });
 </script>
 
 <DataTable
-        data={roles}
-        {total}
-        {columns}
-        {page}
-        searchPlaceholder="Search role name, role key..."
-        addButtonText="Add Role"
-        showOperations={true}
-        {customActions}
-        canEdit={hasPermission('system:role:edit')}
-        canDelete={hasPermission('system:role:delete')}
-        onAdd={handleAdd}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        on:search={handleSearch}
-        on:sort={handleSort}
-        on:pageChange={handlePageChange}
+      data={roles}
+      {total}
+      {columns}
+      {page}
+      searchPlaceholder="Search role name, role key..."
+      addButtonText="Add Role"
+      actions={{ edit: "sys:role:edit", delete: "sys:role:delete",add:"sys:role:add",assignPerm:"sys:role:perm" }}
+      on:add={handleAdd}
+      on:assignPerm={handelAssignPerm}
+      on:edit={handleEdit}
+      on:delete={handleDelete}
+      on:search={handleSearch}
+      on:sort={handleSort}
+      on:pageChange={handlePageChange}
 />
-
-<!-- RolePage Edit Dialog -->
-{#if showDialog}
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 class="text-lg font-semibold mb-4">
-                {currentRole.id ? 'Edit RolePage' : 'Add RolePage'}
-            </h3>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Role Name *</label>
-                    <input
-                            type="text"
-                            bind:value={currentRole.roleName}
-                            placeholder="Enter role name"
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Role Key *</label>
-                    <input
-                            type="text"
-                            bind:value={currentRole.roleKey}
-                            placeholder="e.g., admin, user"
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Status</label>
-                    <select
-                            bind:value={currentRole.status}
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="normal">Enabled</option>
-                        <option value="disabled">Disabled</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Remark</label>
-                    <textarea
-                            bind:value={currentRole.remark}
-                            placeholder="Role description..."
-                            rows="3"
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    ></textarea>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-2 mt-6">
-                <button
-                        on:click={() => showDialog = false}
-                        class="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                >
-                    Cancel
-                </button>
-                <button
-                        on:click={saveRole}
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                    Save
-                </button>
-            </div>
+<Drawer show={showDialog} title={currentRole?.id ? 'Edit Role' : 'Add Role'} position="right"
+        on:close={() => showDialog=false}>
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium mb-1">Role Name *</label>
+            <input type="text" bind:value={currentRole.roleName} placeholder="Enter role name"
+                   class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+            <button on:click={() => showDialog=false} class="px-4 py-2 border rounded hover:bg-gray-100 transition">
+                Cancel
+            </button>
+            <button on:click={saveRoleHandler}
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Save
+            </button>
         </div>
     </div>
-{/if}
+</Drawer>
 
-<!-- Permission Dialog -->
-<!--{#if showPermissionDialog}-->
-<!--    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">-->
-<!--        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">-->
-<!--            <h3 class="text-lg font-semibold mb-4">-->
-<!--                Configure Permissions - {currentRole.roleName}-->
-<!--            </h3>-->
+<Drawer show={showPermissionDialog} title={`Configure Permissions - ${currentRole?.roleName}`} position="right"
+        width="600px" on:close={() => showPermissionDialog=false}>
+    <div class="space-y-2 max-h-[62vh] overflow-y-auto border rounded p-4">
+        {#each allMenus as menu}
+            <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                <input type="checkbox" checked={selectedPermissions.includes(menu.id)}
+                       on:change={() => togglePermission(menu.id)}
+                       class="rounded border-gray-300"/>
+                <span class="flex-1">
+                    {#if menu.icon}
+                        <i class="{menu.icon} mr-2 text-gray-600"></i>
+                    {/if}
+                    {menu.menuName}
+                </span>
+                <span class="text-xs text-gray-500 font-mono">{menu.permission || '-'}</span>
+                <span class="text-xs px-2 py-1 rounded bg-gray-100">
+                    {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'MenuPage' : 'Button'}
+                </span>
+            </label>
+        {/each}
+    </div>
 
-<!--            <div class="space-y-2 max-h-96 overflow-y-auto border rounded p-4">-->
-<!--                {#each allMenus as menu}-->
-<!--                    <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">-->
-<!--                        <input-->
-<!--                                type="checkbox"-->
-<!--                                checked={selectedPermissions.includes(menu.id)}-->
-<!--                                on:change={() => togglePermission(menu.id)}-->
-<!--                                class="rounded border-gray-300"-->
-<!--                        />-->
-<!--                        <span class="flex-1">-->
-<!--                            {#if menu.icon}-->
-<!--                                <i class="{menu.icon} mr-2 text-gray-600"></i>-->
-<!--                            {/if}-->
-<!--                            {menu.menuName}-->
-<!--                        </span>-->
-<!--                        <span class="text-xs text-gray-500 font-mono">-->
-<!--                            {menu.permission || '-'}-->
-<!--                        </span>-->
-<!--                        <span class="text-xs px-2 py-1 rounded bg-gray-100">-->
-<!--                            {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'MenuPage' : 'Button'}-->
-<!--                        </span>-->
-<!--                    </label>-->
-<!--                {/each}-->
-<!--            </div>-->
+    <div class="mt-4 p-3 bg-blue-50 rounded">
+        <p class="text-sm text-blue-800">
+            Selected: <strong>{selectedPermissions.length}</strong> permissions
+        </p>
+    </div>
 
-<!--            <div class="mt-4 p-3 bg-blue-50 rounded">-->
-<!--                <p class="text-sm text-blue-800">-->
-<!--                    Selected: <strong>{selectedPermissions.length}</strong> permissions-->
-<!--                </p>-->
-<!--            </div>-->
-
-<!--            <div class="flex justify-end gap-2 mt-6">-->
-<!--                <button-->
-<!--                        on:click={() => showPermissionDialog = false}-->
-<!--                        class="px-4 py-2 border rounded hover:bg-gray-100 transition"-->
-<!--                >-->
-<!--                    Cancel-->
-<!--                </button>-->
-<!--                <button-->
-<!--                        on:click={savePermissions}-->
-<!--                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"-->
-<!--                >-->
-<!--                    Save Permissions-->
-<!--                </button>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--{/if}-->
+    <div class="flex justify-end gap-2 mt-4">
+        <button on:click={() => showPermissionDialog=false}
+                class="px-4 py-2 border rounded hover:bg-gray-100 transition">Cancel
+        </button>
+        <button on:click={savePermissionsHandler}
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Save Permissions
+        </button>
+    </div>
+</Drawer>

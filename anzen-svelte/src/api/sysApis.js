@@ -62,6 +62,16 @@ export async function deleteUser(id) {
     return await pb.collection("users").delete(id);
 }
 
+export async function saveUser(userData) {
+    if (userData.id) {
+        // 更新用户
+        return await pb.collection('users').update(userData.id, userData);
+    } else {
+        // 创建用户
+        return await pb.collection('users').create(userData);
+    }
+}
+
 /**
  * 获取用户列表带排序
  * @param {number} page
@@ -105,6 +115,63 @@ export async function listRole(page = 1, perPage = 20, sort = '-created', filter
         fields: 'id,roleName,permission,created,updated',
     });
 }
+
+
+/**
+ * 创建菜单
+ * @param data
+ */
+export async function createMenu(data) {
+    return await pb.collection('sys_menu').create(data);
+}
+
+/**
+ * 更新菜单
+ * @param id
+ * @param data
+ */
+export async function updateMenu(id, data) {
+    return await pb.collection('sys_menu').update(id, data);
+}
+
+/**
+ * 删除菜单
+ * @param id
+ */
+export async function deleteMenu(id) {
+    return await pb.collection('sys_menu').delete(id);
+}
+
+
+/**
+ * 新增或更新角色
+ * @param {object} role
+ */
+export async function saveRole(role) {
+    if (role.id) {
+        return await pb.collection('sys_role').update(role.id, role);
+    } else {
+        return await pb.collection('sys_role').create(role);
+    }
+}
+
+/**
+ * 删除角色
+ * @param {string} id
+ */
+export async function deleteRole(id) {
+    return await pb.collection('sys_role').delete(id);
+}
+
+/**
+ * 更新角色权限
+ * @param {string} id
+ * @param {Array<string>} permissions
+ */
+export async function saveRolePermissions(id, permissions) {
+    return await pb.collection('sys_role').update(id, {permission: permissions});
+}
+
 
 pb.autoCancellation(false);
 // 导出 PocketBase 实例（可直接用）

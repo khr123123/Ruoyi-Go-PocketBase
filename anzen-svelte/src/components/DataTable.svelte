@@ -1,7 +1,8 @@
 <!-- src/components/DataTable.svelte -->
 <script>
-    import {Bars4, ChevronDown, Code, Download, Search} from '../lib/icons';
+    import {ChevronDown, Download, Search} from '../lib/icons';
     import {createEventDispatcher} from "svelte";
+    import {permission} from "../utils/permissionDirective.js";
 
     const dispatch = createEventDispatcher();
     // Props
@@ -12,9 +13,7 @@
     export let searchPlaceholder = "Search...";
     export let showAddButton = true;
     export let addButtonText = "New record";
-    export let showApiPreview = true;
-    export let onAdd = null;
-    export let onEdit = null;
+    export let actions = {}
     // 内部状态
     let search = "";
     let sort = "-created";
@@ -107,23 +106,18 @@
         <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-md w-full max-w-md">
             <Search size={16}/>
             <input
-                    class="bg-transparent outline-none text-sm flex-1"
-                    placeholder={searchPlaceholder}
-                    bind:value={search}
+                  class="bg-transparent outline-none text-sm flex-1"
+                  placeholder={searchPlaceholder}
+                  bind:value={search}
             />
         </div>
 
         <div class="flex gap-2">
-            {#if showApiPreview}
-                <button class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition">
-                    <Code size={16}/> API Preview
-                </button>
-            {/if}
-
             {#if showAddButton}
                 <button
-                        on:click={() => onAdd && onAdd()}
-                        class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-black text-white hover:bg-gray-800 transition">
+                      use:permission={actions["add"]}
+                      on:click={() =>dispatch('add')}
+                      class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-black text-white hover:bg-gray-800 transition">
                     <span class="text-lg leading-none">+</span> {addButtonText}
                 </button>
             {/if}
@@ -152,11 +146,11 @@
                         </th>
                     {/if}
                 {/each}
-
+                <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
                 <th class="p-3 w-10">
                     <button
-                            class="flex items-center gap-1 text-gray-600 hover:text-black transition-colors"
-                            on:click={openColumnMenu}>
+                          class="flex items-center gap-1 text-gray-600 hover:text-black transition-colors"
+                          on:click={openColumnMenu}>
                         <ChevronDown size={16} class="transition-transform {showColumnMenu ? 'rotate-180' : ''}"/>
                     </button>
                 </th>
@@ -179,11 +173,36 @@
                         {/if}
                     {/each}
 
-                    <td class="p-3">
-                        <button class="text-gray-600 hover:text-black" on:click={() => onEdit && onEdit(row)}>
-                            <Bars4/>
-                        </button>
+                    <td class="px-4 py-3 text-center">
+                        <div class="inline-flex gap-2">
+                            {#if actions["edit"]}
+                                <button
+                                      use:permission={actions["edit"]}
+                                      on:click={() =>dispatch('edit', row) }
+                                      class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">
+                                    Edit
+                                </button>
+                            {/if}
+                            {#if actions["delete"]}
+                                <button on:click={() => dispatch('delete', row)}
+                                        use:permission={actions["delete"]}
+                                        class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">
+                                    Delete
+                                </button>
+                            {/if}
+                            {#if actions["assignPerm"]}
+                                <button
+                                      on:click={() => dispatch('assignPerm', row)}
+                                      use:permission={actions["assignPerm"]}
+                                      class="px-3 py-1 text-sm font-medium rounded shadow-sm bg-amber-100 text-amber-700 hover:bg-amber-200 hover:text-amber-800"
+                                >
+                                    Assign
+                                </button>
+                            {/if}
+
+                        </div>
                     </td>
+                    <td class="px-3"></td>
                 </tr>
             {/each}
             </tbody>
@@ -203,15 +222,15 @@
     <!-- Pagination -->
     <div class="flex items-center justify-center gap-3 py-4">
         <button
-                class="px-3 py-1.5 border rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-                disabled={page === 1}
-                on:click={prevPage}>
+              class="px-3 py-1.5 border rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+              disabled={page === 1}
+              on:click={prevPage}>
             Prev
         </button>
         <span class="text-sm">Page {page}</span>
         <button
-                class="px-3 py-1.5 border rounded bg-gray-100 hover:bg-gray-200"
-                on:click={nextPage}>
+              class="px-3 py-1.5 border rounded bg-gray-100 hover:bg-gray-200"
+              on:click={nextPage}>
             Next
         </button>
     </div>
@@ -221,9 +240,9 @@
 {#if showColumnMenu}
     <div class="fixed inset-0 z-40" on:click={() => showColumnMenu = false}></div>
     <div
-            class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[180px] py-2"
-            style="left: {menuButtonRect?.left - 150}px; top: {menuButtonRect?.bottom + 5}px;"
-            on:click={stopPropagation}>
+          class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[180px] py-2"
+          style="left: {menuButtonRect?.left - 150}px; top: {menuButtonRect?.bottom + 5}px;"
+          on:click={stopPropagation}>
         <div class="px-3 py-2 text-xs font-semibold text-gray-500 border-b border-gray-100">
             Toggle Columns
         </div>

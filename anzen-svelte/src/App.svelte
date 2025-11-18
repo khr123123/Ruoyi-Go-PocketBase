@@ -10,6 +10,7 @@
     import {myPermissions, myRouter} from "./stores/authStore.js";
     import {getUserRouter} from "./api/sysApis.js";
     import {buildTree, extractMenus, extractPermissions} from "./utils/menuUtils.js";
+    import ConfirmModal from "./components/ConfirmModal.svelte";
 
     // 路由守卫
     function authGuard(detail) {
@@ -51,5 +52,6 @@
 <Router {routes}/>
 
 {#if $toast}
-  <Toast message={$toast.message} type={$toast.type} onClose={() => toast.set(null)}/>
+    <Toast message={$toast.message} type={$toast.type} onClose={() => toast.set(null)}/>
 {/if}
+<ConfirmModal/>
