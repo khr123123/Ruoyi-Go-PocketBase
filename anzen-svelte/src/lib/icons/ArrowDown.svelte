@@ -16,6 +16,6 @@
 </svg>
 
 <script>
-    export let size = 14;
+    export let size = 16;
     export let className = '';
 </script>

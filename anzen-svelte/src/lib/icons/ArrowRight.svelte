@@ -7,13 +7,13 @@
         class={className}
         {...$$restProps}
 >
-    <path
-            d="M6 3 L11 8 L6 13"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-    />
+  <path
+          d="M6 3 L11 8 L6 13"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+  />
 </svg>
 
 <script>

@@ -4,6 +4,8 @@
     import {showToast} from '../../stores/toastStore.js';
     import TreeTable from "../../components/TreeTable.svelte";
     import {listMenu} from "../../api/sysApis.js";
+    import {user} from "../../stores/userStore.js";
+
     let menus = [];
     let rawMenus = [];
     let showDialog = false;
@@ -135,8 +137,8 @@
         try {
             const {search = '', sort = '-created', page: p = 1} = params;
             const filter = search
-                ? `menuName ~ "${search}" || permission ~ "${search}" || url ~ "${search}"`
-                : '';
+                  ? `menuName ~ "${search}" || permission ~ "${search}" || url ~ "${search}"`
+                  : '';
 
             const res = await listMenu(1, 500, sort, filter);
             rawMenus = res.items || [];
@@ -156,13 +158,11 @@
             showToast('Please fill in required fields', 'error');
             return;
         }
-
         try {
             const url = currentMenu.id
-                ? `http://127.0.0.1:8090/api/collections/sys_menu/records/${currentMenu.id}`
-                : 'http://127.0.0.1:8090/api/collections/sys_menu/records';
+                  ? `http://127.0.0.1:8090/api/collections/sys_menu/records/${currentMenu.id}`
+                  : 'http://127.0.0.1:8090/api/collections/sys_menu/records';
             const method = currentMenu.id ? 'PATCH' : 'POST';
-
             const submitData = {
                 menuName: currentMenu.menuName,
                 menuType: currentMenu.menuType,
@@ -178,7 +178,7 @@
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${$user.token}`
                 },
                 body: JSON.stringify(submitData)
             });
@@ -218,11 +218,6 @@
      * handleAdd - 处理添加按钮点击
      */
     function handleAdd() {
-        if (!hasPermission('sys:menu:add')) {
-            showToast('No permission', 'error');
-            return;
-        }
-
         currentMenu = {
             menuName: '',
             menuType: 'M',
@@ -269,13 +264,13 @@
 
         try {
             const response = await fetch(
-                `http://127.0.0.1:8090/api/collections/sys_menu/records/${menu.id}`,
-                {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                }
+                  `http://127.0.0.1:8090/api/collections/sys_menu/records/${menu.id}`,
+                  {
+                      method: 'DELETE',
+                      headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                      }
+                  }
             );
 
             if (response.ok) {
@@ -323,20 +318,20 @@
     />
 -->
 <TreeTable
-        data={menus}
-        {columns}
-        searchPlaceholder="Search menu name, permission, route..."
-        addButtonText="Add Menu"
-        showAddButton={true}
-        showApiPreview={false}
-        showCheckbox={true}
-        actions={['edit', 'delete']}
-        autoExpandOnSearch={true}
-        onAdd={handleAdd}
-        on:edit={handleEdit}
-        on:delete={handleDelete}
-        on:search={handleSearch}
-        on:sort={handleSort}
+      data={menus}
+      {columns}
+      searchPlaceholder="Search menu name, permission, route..."
+      addButtonText="Add Menu"
+      showAddButton={true}
+      showApiPreview={false}
+      showCheckbox={true}
+      actions={{"edit":"sys:menu:edit","add":"sys:menu:add",}}
+      autoExpandOnSearch={true}
+      onAdd={handleAdd}
+      on:edit={handleEdit}
+      on:delete={handleDelete}
+      on:search={handleSearch}
+      on:sort={handleSort}
 />
 
 <!-- 编辑对话框 -->
@@ -351,18 +346,18 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">Menu Name *</label>
                     <input
-                            type="text"
-                            bind:value={currentMenu.menuName}
-                            placeholder="Enter menu name"
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="text"
+                          bind:value={currentMenu.menuName}
+                          placeholder="Enter menu name"
+                          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Menu Type *</label>
                     <select
-                            bind:value={currentMenu.menuType}
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          bind:value={currentMenu.menuType}
+                          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="M">Directory (目录)</option>
                         <option value="C">Menu (菜单)</option>
@@ -373,8 +368,8 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">Parent Menu</label>
                     <select
-                            bind:value={currentMenu.parentId}
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          bind:value={currentMenu.parentId}
+                          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         {#each parentMenuOptions as option}
                             <option value={option.id} disabled={currentMenu.id === option.id}>
@@ -387,10 +382,10 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">Icon</label>
                     <input
-                            type="text"
-                            bind:value={currentMenu.icon}
-                            placeholder="User, Settings, List..."
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="text"
+                          bind:value={currentMenu.icon}
+                          placeholder="User, Settings, List..."
+                          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
@@ -398,10 +393,10 @@
                     <div>
                         <label class="block text-sm font-medium mb-1">Route Path</label>
                         <input
-                                type="text"
-                                bind:value={currentMenu.url}
-                                placeholder="/sys/menu/index"
-                                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              type="text"
+                              bind:value={currentMenu.url}
+                              placeholder="/sys/menu/index"
+                              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                 {/if}
@@ -409,33 +404,33 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">Permission String</label>
                     <input
-                            type="text"
-                            bind:value={currentMenu.permission}
-                            placeholder="sys:menu:query"
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="text"
+                          bind:value={currentMenu.permission}
+                          placeholder="sys:menu:query"
+                          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Sort Order</label>
                     <input
-                            type="number"
-                            bind:value={currentMenu.orderNum}
-                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="number"
+                          bind:value={currentMenu.orderNum}
+                          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
             </div>
 
             <div class="flex justify-end gap-2 mt-6">
                 <button
-                        on:click={() => showDialog = false}
-                        class="px-4 py-2 border rounded hover:bg-gray-100 transition"
+                      on:click={() => showDialog = false}
+                      class="px-4 py-2 border rounded hover:bg-gray-100 transition"
                 >
                     Cancel
                 </button>
                 <button
-                        on:click={saveMenu}
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                      on:click={saveMenu}
+                      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 >
                     Save
                 </button>

@@ -1,6 +1,7 @@
 <script>
-    import { createEventDispatcher, onMount } from 'svelte';
-    import { ChevronDown, Code, ArrowUp, ArrowDown, Search } from "../lib/icons/index.js";
+    import {createEventDispatcher} from 'svelte';
+    import {ArrowDown, ArrowUp, ChevronDown, Code, Search} from "../lib/icons/index.js";
+    import {permission} from "../utils/permissionDirective.js"
 
     export let data = [];
     export let columns = [];
@@ -10,7 +11,7 @@
     export let showApiPreview = false;
     export let showCheckbox = true;
     export let autoExpandOnSearch = true;
-    export let actions = ['edit', 'delete'];
+    export let actions = {};
     export let onAdd = null;
     export let onEdit = null;
     export let onDelete = null;
@@ -30,8 +31,11 @@
 
     function ensureChildrenArray(node) {
         if (typeof node.children === 'string') {
-            try { node.children = JSON.parse(node.children || '[]'); }
-            catch { node.children = []; }
+            try {
+                node.children = JSON.parse(node.children || '[]');
+            } catch {
+                node.children = [];
+            }
         }
         if (!Array.isArray(node.children)) node.children = [];
         node.children.forEach(c => ensureChildrenArray(c));
@@ -39,7 +43,7 @@
 
     function sanitizeData(nodes) {
         if (!Array.isArray(nodes)) return [];
-        const cloned = nodes.map(n => ({ ...n }));
+        const cloned = nodes.map(n => ({...n}));
         cloned.forEach(n => ensureChildrenArray(n));
         return cloned;
     }
@@ -57,7 +61,7 @@
         const rows = [];
         if (!Array.isArray(nodes)) return rows;
         nodes.forEach(node => {
-            rows.push({ ...node, _level: level });
+            rows.push({...node, _level: level});
             if (node.children?.length && expandedIds.has(node.id)) rows.push(...renderTreeRows(node.children, level + 1));
         });
         return rows;
@@ -80,14 +84,23 @@
         allExpanded = !allExpanded;
         if (allExpanded) {
             const newSet = new Set();
-            function dfs(nodes) { nodes?.forEach(n => { if (n.children?.length) { newSet.add(n.id); dfs(n.children); } }); }
+
+            function dfs(nodes) {
+                nodes?.forEach(n => {
+                    if (n.children?.length) {
+                        newSet.add(n.id);
+                        dfs(n.children);
+                    }
+                });
+            }
+
             dfs(data);
             expandedIds = newSet;
         } else expandedIds = new Set();
     }
 
     function handleSearch() {
-        dispatch('search', { search });
+        dispatch('search', {search});
         if (!search) return;
 
         const matched = [];
@@ -114,7 +127,7 @@
         if (currentSort === field) currentSort = "-" + field;
         else if (currentSort === "-" + field) currentSort = field;
         else currentSort = field;
-        dispatch('sort', { sort: currentSort });
+        dispatch('sort', {sort: currentSort});
     }
 
     function getSortIcon(key) {
@@ -125,7 +138,7 @@
 
     function toggleColumn(key) {
         visibleColumns[key] = !visibleColumns[key];
-        visibleColumns = { ...visibleColumns };
+        visibleColumns = {...visibleColumns};
     }
 
     function toggleSelect(id) {
@@ -140,6 +153,7 @@
                 if (isChecked) newSel.add(n.id); else newSel.delete(n.id);
                 n.children?.forEach(child => setChildrenState(child, isChecked));
             }
+
             setChildrenState(node, checked);
         }
 
@@ -152,10 +166,11 @@
             if (allChildrenSelected) newSel.add(pId); else newSel.delete(pId);
             updateParentState(pId);
         }
+
         updateParentState(id);
 
         selectedIds = newSel;
-        dispatch('selectionChange', { selected: Array.from(selectedIds) });
+        dispatch('selectionChange', {selected: Array.from(selectedIds)});
     }
 
     function isIndeterminate(id) {
@@ -166,9 +181,20 @@
         return someSelected && !allSelected;
     }
 
-    function handleAdd() { if (onAdd) onAdd(); dispatch('add'); }
-    function handleEdit(row) { if (onEdit) onEdit(row); dispatch('edit', row); }
-    function handleDelete(row) { if (onDelete) onDelete(row); dispatch('delete', row); }
+    function handleAdd() {
+        if (onAdd) onAdd();
+        dispatch('add');
+    }
+
+    function handleEdit(row) {
+        if (onEdit) onEdit(row);
+        dispatch('edit', row);
+    }
+
+    function handleDelete(row) {
+        if (onDelete) onDelete(row);
+        dispatch('delete', row);
+    }
 
     function getCellValue(row, column) {
         const value = row[column.key];
@@ -177,7 +203,9 @@
 
     $: {
         visibleColumns = {};
-        columns.forEach(col => { visibleColumns[col.key] = col.visible !== false; });
+        columns.forEach(col => {
+            visibleColumns[col.key] = col.visible !== false;
+        });
     }
 
     $: {
@@ -197,20 +225,25 @@
     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
         <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-md w-full max-w-md">
             <Search size={16}/>
-            <input bind:value={search} on:input={handleSearch} class="bg-transparent outline-none text-sm flex-1" placeholder={searchPlaceholder}/>
+            <input bind:value={search} on:input={handleSearch} class="bg-transparent outline-none text-sm flex-1"
+                   placeholder={searchPlaceholder}/>
         </div>
 
         <div class="flex gap-2">
-            <button on:click={toggleExpandAll} class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition" title={allExpanded ? 'Collapse All' : 'Expand All'}>
+            <button on:click={toggleExpandAll}
+                    class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition"
+                    title={allExpanded ? 'Collapse All' : 'Expand All'}>
                 {allExpanded ? '📂' : '📁'} {allExpanded ? 'Collapse' : 'Expand'}
             </button>
             {#if showApiPreview}
-                <button class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition">
+                <button
+                      class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100 transition">
                     <Code size={16}/> API Preview
                 </button>
             {/if}
             {#if showAddButton}
-                <button on:click={handleAdd} class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 transition">
+                <button on:click={handleAdd}
+                        class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 transition">
                     <span class="text-lg leading-none">+</span> {addButtonText}
                 </button>
             {/if}
@@ -221,16 +254,22 @@
         <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-                {#if showCheckbox}<th class="px-4 py-3 w-12"></th>{/if}
+                {#if showCheckbox}
+                    <th class="px-4 py-3 w-12"></th>
+                {/if}
                 {#each columns as column}
                     {#if visibleColumns[column.key]}
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 {column.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''}" on:click={() => column.sortable !== false && handleSort(column.key)}>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 {column.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''}"
+                            on:click={() => column.sortable !== false && handleSort(column.key)}>
                             <div class="flex items-center gap-2">
-                                {#if column.icon}<svelte:component this={column.icon} size={14}/>{/if}
+                                {#if column.icon}
+                                    <svelte:component this={column.icon} size={14}/>
+                                {/if}
                                 <span>{column.label}</span>
                                 {#if column.sortable !== false}
                                     {#if getSortIcon(column.key)}
-                                        <svelte:component this={getSortIcon(column.key)} size={12} class="text-blue-600"/>
+                                        <svelte:component this={getSortIcon(column.key)} size={12}
+                                                          class="text-blue-600"/>
                                     {:else}
                                         <span class="text-gray-400 text-xs">⇅</span>
                                     {/if}
@@ -241,7 +280,8 @@
                 {/each}
                 <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
                 <th class="px-3 w-10">
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-black transition-colors" on:click={() => showColumnMenu = !showColumnMenu}>
+                    <button class="flex items-center gap-1 text-gray-600 hover:text-black transition-colors"
+                            on:click={() => showColumnMenu = !showColumnMenu}>
                         <ChevronDown size={16} class="transition-transform {showColumnMenu ? 'rotate-180' : ''}"/>
                     </button>
                 </th>
@@ -253,7 +293,9 @@
                 <tr class="border-b hover:bg-gray-50 transition">
                     {#if showCheckbox}
                         <td class="px-4 py-3">
-                            <input type="checkbox" checked={selectedIds.has(row.id)} indeterminate={isIndeterminate(row.id)} on:change={() => toggleSelect(row.id)} class="rounded"/>
+                            <input type="checkbox" checked={selectedIds.has(row.id)}
+                                   indeterminate={isIndeterminate(row.id)} on:change={() => toggleSelect(row.id)}
+                                   class="rounded"/>
                         </td>
                     {/if}
 
@@ -263,7 +305,8 @@
                                 {#if idx === 0}
                                     <div class="flex items-center gap-2" style="padding-left: {row._level * 20}px">
                                         {#if row.children?.length}
-                                            <button on:click={() => toggleExpand(row.id)} class="w-5 h-5 flex items-center justify-center hover:bg-gray-200 rounded transition text-gray-600">
+                                            <button on:click={() => toggleExpand(row.id)}
+                                                    class="w-5 h-5 flex items-center justify-center hover:bg-gray-200 rounded transition text-gray-600">
                                                 {expandedIds.has(row.id) ? '▼' : '▶'}
                                             </button>
                                         {:else}<span class="w-5"></span>{/if}
@@ -278,13 +321,21 @@
 
                     <td class="px-4 py-3 text-center">
                         <div class="inline-flex gap-2">
-                            {#each actions as action}
-                                {#if action === 'edit'}
-                                    <button on:click={() => handleEdit(row)} class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">Edit</button>
-                                {:else if action === 'delete'}
-                                    <button on:click={() => handleDelete(row)} class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">Delete</button>
-                                {:else if action === 'more'}
-                                    <button on:click={() => dispatch('more', row)} class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">···</button>
+                            {#each Object.entries(actions) as [key, value]}
+                                {#if key === 'edit'}
+                                    <button
+                                          use:permission={value}
+                                          on:click={() => handleEdit(row)}
+                                          class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">
+                                        Edit
+                                    </button>
+                                {:else if key === 'delete'}
+                                    <button on:click={() => handleDelete(row)}
+                                            use:permission={value}
+
+                                            class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">
+                                        Delete
+                                    </button>
                                 {/if}
                             {/each}
                         </div>
@@ -310,7 +361,8 @@
         <div class="text-xs font-medium text-gray-600 px-2 py-1 mb-1">Show Columns</div>
         {#each columns as column}
             <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
-                <input type="checkbox" checked={visibleColumns[column.key]} on:change={() => toggleColumn(column.key)} class="rounded"/>
+                <input type="checkbox" checked={visibleColumns[column.key]} on:change={() => toggleColumn(column.key)}
+                       class="rounded"/>
                 <span class="text-sm">{column.label}</span>
             </label>
         {/each}

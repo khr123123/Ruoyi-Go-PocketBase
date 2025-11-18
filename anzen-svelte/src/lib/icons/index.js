@@ -19,3 +19,8 @@ export {default as Bars4} from './Bars4.svelte';
 export {default as ChevronDown} from './ChevronDown.svelte';
 export {default as ChevronUpDown} from './ChevronUpDown.svelte';
 export {default as ArrowUp} from './ArrowUp.svelte';
+export {default as Home} from './Home.svelte';
+export {default as Identifi} from './Identifi.svelte';
+export {default as ShieldCheck} from './ShieldCheck.svelte';
+export {default as Github} from './Github.svelte';
+export {default as Bug} from './Bug.svelte';
