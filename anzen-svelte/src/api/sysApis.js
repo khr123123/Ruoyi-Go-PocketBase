@@ -172,6 +172,15 @@ export async function saveRolePermissions(id, permissions) {
     return await pb.collection('sys_role').update(id, {permission: permissions});
 }
 
+/**
+ * 日志相关
+ */
+export async function listLogs(page = 1, perPage = 20, sort = '-created', filter = '') {
+    return await pb.collection('logs').getList(page, perPage, {
+        sort, filter,
+    });
+}
+
 
 pb.autoCancellation(false);
 // 导出 PocketBase 实例（可直接用）

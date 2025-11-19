@@ -1,6 +1,6 @@
 <!-- src/components/DataTable.svelte -->
 <script>
-    import {ChevronDown, Download, Search} from '../lib/icons';
+    import {ChevronDown, Download, Next, Prev, Search} from '../lib/icons';
     import {createEventDispatcher} from "svelte";
     import {permission} from "../utils/permissionDirective.js";
 
@@ -243,13 +243,13 @@
                   class="px-3 py-1.5 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 text-xs transition-colors"
                   disabled={page === 1}
                   on:click={prevPage}>
-                ← Prev
+                <Prev size={14}/>
             </button>
             <span class="text-xs text-gray-600 px-2">Page <strong class="text-gray-900">{page}</strong></span>
             <button
                   class="px-3 py-1.5 border border-gray-300 rounded bg-white hover:bg-gray-50 text-gray-700 text-xs transition-colors"
                   on:click={nextPage}>
-                Next →
+                <Next size={14}/>
             </button>
         </div>
 

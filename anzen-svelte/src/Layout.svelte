@@ -2,7 +2,6 @@
     import Router, {link, location, push} from "svelte-spa-router";
     import {wrap} from "svelte-spa-router/wrap";
     import About from './pages/About.svelte';
-    import Setting from './pages/Setting.svelte';
     import * as Icons from './lib/icons/index.js';
     import {Settings, SettingsAlt} from './lib/icons/index.js';
     import {clearUser, user} from './stores/userStore.js';
@@ -26,7 +25,6 @@
     function generateRoutes(menuData) {
         const routes = {
             '/about': wrap({component: About}),
-            '/setting': wrap({component: Setting})
         };
         if (!menuData) return routes;
 
@@ -89,8 +87,8 @@
         <!-- Logo & 搜索 -->
         <div class="p-4 border-b border-gray-200">
             <div class="flex items-center justify-center mb-3 text-gray-800">
-                <img src="../public/logo.png" alt="RY" class="w-8 rounded-sm">
-                <span class="ml-2 text-lg font-semibold tracking-wide">RUOYI-PB</span>
+                <img src="../public/logo.jpg" alt="RY" class="w-12 rounded-sm">
+                <span class="ml-2 text-lg font-mono tracking-wide">RUOYI-PB</span>
             </div>
 
             <div class="relative">
@@ -174,19 +172,14 @@
             <!-- 系统菜单 -->
             <div class="mt-4 pt-3 border-t border-gray-200 space-y-1">
                 <div class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">System</div>
-                <a href="/setting"
-                   use:link
-                   use:active={{ path: "/setting", className: 'bg-gray-100' }}
-                   class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 rounded-lg  hover:bg-gray-100 transition">
-                    <Settings size={16} className="text-black"/>
-                    <span>Settings</span>
-                </a>
-                <a href="/about"
-                   use:link
-                   use:active={{ path: "/about", className: 'bg-gray-100' }}
-                   class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition">
-                    <Settings size={16} className="text-black"/>
-                    <span>About</span>
+                <a
+                      href="/about"
+                      use:link
+                      use:active={{ path: "/about", className: 'bg-gray-100' }}
+                      class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all hover:bg-gray-100"
+                >
+                    <Settings size={16}  className="text-black"/>
+                    <span class="truncate">About</span>
                 </a>
             </div>
         </nav>
