@@ -31,8 +31,8 @@
 
     // 当前用户头像 URL
     $: currentAvatarUrl = currentUser?.id && currentUser?.avatar
-        ? `${AVATAR_PREFIX}${currentUser.id}/${currentUser.avatar}`
-        : null;
+          ? `${AVATAR_PREFIX}${currentUser.id}/${currentUser.avatar}`
+          : null;
 
     const columns = [
         {key: 'id', label: 'ID', icon: ArrowDown, sortable: true, class: "font-mono"},
@@ -147,7 +147,7 @@
         // 验证文件类型
         const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!validTypes.includes(file.type)) {
-            showToast('请选择图片文件（JPG、PNG、GIF 或 WebP）', 'error');
+            showToast('Please select an image file (JPG, PNG, GIF, or WebP)', 'error');
             event.target.value = '';
             return;
         }
@@ -155,7 +155,7 @@
         // 验证文件大小（最大 5MB）
         const maxSize = 5 * 1024 * 1024;
         if (file.size > maxSize) {
-            showToast('图片大小不能超过 5MB', 'error');
+            showToast('Image size cannot exceed 5MB', 'error');
             event.target.value = '';
             return;
         }
@@ -185,14 +185,13 @@
     async function saveUserHandler() {
         // 验证邮箱
         if (!currentUser.email || !currentUser.email.trim()) {
-            showToast('邮箱不能为空', 'error');
+            showToast('Email cannot be empty', 'error');
             return;
         }
-
         // 验证邮箱格式
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(currentUser.email)) {
-            showToast('邮箱格式不正确', 'error');
+            showToast('Invalid email format', 'error');
             return;
         }
 
@@ -211,11 +210,11 @@
                 // 只有填写了密码才更新密码
                 if (currentUser.password && currentUser.password.trim()) {
                     if (currentUser.password !== currentUser.passwordConfirm) {
-                        showToast('两次密码输入不一致', 'error');
+                        showToast('Password cannot be empty', 'error');
                         return;
                     }
                     if (currentUser.password.length < 8) {
-                        showToast('密码长度至少为8个字符', 'error');
+                        showToast('Password must be at least 8 characters', 'error');
                         return;
                     }
                     submitData.password = currentUser.password;
@@ -227,15 +226,15 @@
             } else {
                 // 新增用户
                 if (!currentUser.password || !currentUser.password.trim()) {
-                    showToast('密码不能为空', 'error');
+                    showToast('Password cannot be empty', 'error');
                     return;
                 }
                 if (currentUser.password !== currentUser.passwordConfirm) {
-                    showToast('两次密码输入不一致', 'error');
+                    showToast('Passwords do not match', 'error');
                     return;
                 }
                 if (currentUser.password.length < 8) {
-                    showToast('密码长度至少为8个字符', 'error');
+                    showToast('Password must be at least 8 characters', 'error');
                     return;
                 }
 
@@ -251,17 +250,14 @@
                 submitData.avatar = null;
             }
 
-            console.log('提交数据:', submitData);
-
             await saveUser(submitData);
-            showToast('保存成功', 'success');
+            showToast('Saved successfully', 'success');
             showDialog = false;
             resetAvatarUpload();
             await loadUsers({page});
         } catch (error) {
             console.error('Save user error:', error);
-
-            let errorMsg = '操作失败';
+            let errorMsg = 'Operation failed';
             if (error?.data) {
                 const errors = [];
                 for (const [field, detail] of Object.entries(error.data)) {
@@ -277,19 +273,19 @@
             } else if (error?.message) {
                 errorMsg = error.message;
             }
-
             showToast(errorMsg, 'error');
         }
     }
 
     async function handleDelete(event) {
         const user = event.detail;
-        const ok = await confirmDialog(`确定要删除用户 "${user.name || user.email}" 吗？`);
+        const ok = await confirmDialog(`Are you sure you want to delete user "${user.name || user.email}"?`);
         if (!ok) return;
 
         try {
             await deleteUser(user.id);
-            showToast('删除成功', 'success');
+            showToast('Deleted successfully', 'success');
+
             if (users.length === 1 && page > 1) {
                 await loadUsers({page: page - 1});
             } else {
@@ -297,9 +293,10 @@
             }
         } catch (error) {
             console.error('Delete user error:', error);
-            showToast('删除失败: ' + (error?.message || '未知错误'), 'error');
+            showToast('Delete failed: ' + (error?.message || 'Unknown error'), 'error');
         }
     }
+
 
     function removeRole(roleId) {
         currentUser.role = currentUser.role.filter(id => id !== roleId);
@@ -318,78 +315,80 @@
             const res = await listRole(1, 500);
             allRoles = res.items || [];
         } catch (error) {
-            console.error('初始化失败:', error);
-            showToast('初始化失败', 'error');
+            showToast('Init error', 'error');
         }
     });
 </script>
 
 <!-- 用户表格 -->
 <DataTable
-        data={users}
-        {total}
-        {columns}
-        {page}
-        searchPlaceholder="Search email or userName..."
-        addButtonText="Add User"
-        actions={{ add: "sys:user:add", edit: "sys:user:edit", delete: "sys:user:delete" }}
-        on:add={handleAdd}
-        on:edit={handleEdit}
-        on:delete={handleDelete}
-        on:search={handleSearch}
-        on:sort={handleSort}
-        on:pageChange={handlePageChange}
+      data={users}
+      {total}
+      {columns}
+      {page}
+      searchPlaceholder="Search email or userName..."
+      addButtonText="Add User"
+      actions={{ add: "sys:user:add", edit: "sys:user:edit", delete: "sys:user:delete" }}
+      on:add={handleAdd}
+      on:edit={handleEdit}
+      on:delete={handleDelete}
+      on:search={handleSearch}
+      on:sort={handleSort}
+      on:pageChange={handlePageChange}
 />
 
 <!-- 用户编辑/新增抽屉 -->
 <Drawer show={showDialog} title={currentUser?.id ? 'Edit User' : 'Add User'} position="right"
         on:close={() => showDialog = false} width="550px">
-    <form on:submit|preventDefault={saveUserHandler} class="space-y-4">
+
+    <form on:submit|preventDefault={saveUserHandler} class="space-y-4 text-gray-800">
 
         <!-- Avatar Upload Area -->
         <div>
-            <label class="block text-sm font-medium mb-2">Avatar</label>
+            <label class="block text-sm font-medium mb-2 text-gray-700">Avatar</label>
+
             <div class="flex items-start gap-4">
+
                 <!-- Avatar preview -->
                 <div class="flex-shrink-0">
                     {#if avatarPreview}
-                        <!-- New selected avatar preview -->
                         <div class="relative group">
                             <img
-                                    src={avatarPreview}
-                                    alt="Avatar Preview"
-                                    class="w-20 h-20 rounded-full object-cover border-2 border-blue-500"
+                                  src={avatarPreview}
+                                  alt="Avatar Preview"
+                                  class="w-20 h-20 rounded-full object-cover border-2 border-gray-400"
                             />
                             <button
-                                    type="button"
-                                    on:click={removeAvatar}
-                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Remove"
+                                  type="button"
+                                  on:click={removeAvatar}
+                                  class="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Remove"
                             >
                                 <X class="w-4 h-4"/>
                             </button>
                         </div>
+
                     {:else if currentAvatarUrl && currentUser.avatar}
-                        <!-- Existing avatar -->
                         <div class="relative group">
                             <img
-                                    src={currentAvatarUrl}
-                                    alt="Current Avatar"
-                                    class="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                                  src={currentAvatarUrl}
+                                  alt="Current Avatar"
+                                  class="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
                             />
                             <button
-                                    type="button"
-                                    on:click={deleteExistingAvatar}
-                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Delete avatar"
+                                  type="button"
+                                  on:click={deleteExistingAvatar}
+                                  class="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Delete avatar"
                             >
                                 <X class="w-4 h-4"/>
                             </button>
                         </div>
+
                     {:else}
-                        <!-- Default placeholder -->
-                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-semibold">
-                            {currentUser?.name?.charAt(0)?.toUpperCase() || currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
+                        <div class="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-2xl font-semibold">
+                            {currentUser?.name?.charAt(0)?.toUpperCase() ||
+                            currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                     {/if}
                 </div>
@@ -397,20 +396,22 @@
                 <!-- Upload button -->
                 <div class="flex-1">
                     <input
-                            type="file"
-                            bind:this={avatarInput}
-                            on:change={handleAvatarSelect}
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            class="hidden"
-                            id="avatar-upload"
+                          type="file"
+                          bind:this={avatarInput}
+                          on:change={handleAvatarSelect}
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          class="hidden"
+                          id="avatar-upload"
                     />
+
                     <label
-                            for="avatar-upload"
-                            class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                          for="avatar-upload"
+                          class="inline-flex items-center gap-2 px-4 py-2 border border-gray-400 rounded-lg cursor-pointer hover:bg-gray-100 transition text-gray-700"
                     >
                         <Upload class="w-4 h-4"/>
                         <span>Select Image</span>
                     </label>
+
                     <p class="text-xs text-gray-500 mt-2">
                         Supports JPG, PNG, GIF, WebP<br/>
                         Max size: 5MB
@@ -421,62 +422,76 @@
 
         <!-- Email -->
         <div>
-            <label class="block text-sm font-medium mb-1">
-                Email <span class="text-red-500">*</span>
+            <label class="block text-sm font-medium mb-1 text-gray-700">
+                Email <span class="text-gray-500">*</span>
             </label>
+
             <input
-                    type="email"
-                    bind:value={currentUser.email}
-                    placeholder="Enter email"
-                    required
-                    class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="email"
+                  bind:value={currentUser.email}
+                  placeholder="Enter email"
+                  required
+                  class="w-full bg-gray-100 border border-gray-400 rounded-lg px-3 py-2
+                       text-gray-800 placeholder-gray-500
+                       focus:border-gray-700 focus:ring-2 focus:ring-gray-700 focus:outline-none"
             />
             <p class="text-xs text-gray-500 mt-1">Used for login and notifications</p>
         </div>
 
         <!-- Name -->
         <div>
-            <label class="block text-sm font-medium mb-1">Name</label>
+            <label class="block text-sm font-medium mb-1 text-gray-700">Name</label>
+
             <input
-                    type="text"
-                    bind:value={currentUser.name}
-                    placeholder="Enter name"
-                    class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="text"
+                  bind:value={currentUser.name}
+                  placeholder="Enter name"
+                  class="w-full bg-gray-100 border border-gray-400 rounded-lg px-3 py-2
+                       text-gray-800 placeholder-gray-500
+                       focus:border-gray-700 focus:ring-2 focus:ring-gray-700 focus:outline-none"
             />
         </div>
 
         <!-- Password -->
         <div class="space-y-3">
             <div>
-                <label class="block text-sm font-medium mb-1">
+                <label class="block text-sm font-medium mb-1 text-gray-700">
                     Password
                     {#if !currentUser.id}
-                        <span class="text-red-500">*</span>
+                        <span class="text-gray-500">*</span>
                     {:else}
                         <span class="text-gray-500 text-xs">(Leave blank to keep unchanged)</span>
                     {/if}
                 </label>
+
                 <input
-                        type="password"
-                        bind:value={currentUser.password}
-                        placeholder={currentUser.id ? 'Leave blank to keep unchanged' : 'At least 8 characters'}
-                        minlength="8"
-                        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      type="password"
+                      bind:value={currentUser.password}
+                      placeholder={currentUser.id ? 'Leave blank' : 'At least 8 characters'}
+                      minlength="8"
+                      class="w-full bg-gray-100 border border-gray-400 rounded-lg px-3 py-2
+                           text-gray-800 placeholder-gray-500
+                           focus:border-gray-700 focus:ring-2 focus:ring-gray-700 focus:outline-none"
                 />
             </div>
+
             <div>
-                <label class="block text-sm font-medium mb-1">
+                <label class="block text-sm font-medium mb-1 text-gray-700">
                     Confirm Password
-                    {#if !currentUser.id}<span class="text-red-500">*</span>{/if}
+                    {#if !currentUser.id}<span class="text-gray-500">*</span>{/if}
                 </label>
+
                 <input
-                        type="password"
-                        bind:value={currentUser.passwordConfirm}
-                        placeholder="Re-enter password"
-                        minlength="8"
-                        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      type="password"
+                      bind:value={currentUser.passwordConfirm}
+                      placeholder="Re-enter password"
+                      minlength="8"
+                      class="w-full bg-gray-100 border border-gray-400 rounded-lg px-3 py-2
+                           text-gray-800 placeholder-gray-500
+                           focus:border-gray-700 focus:ring-2 focus:ring-gray-700 focus:outline-none"
                 />
             </div>
+
             {#if !currentUser.id}
                 <p class="text-xs text-gray-500">Password must be at least 8 characters</p>
             {/if}
@@ -484,44 +499,47 @@
 
         <!-- Switches -->
         <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer">
+            <label class="flex items-center gap-2 cursor-pointer text-gray-700">
                 <input
-                        type="checkbox"
-                        bind:checked={currentUser.emailVisibility}
-                        class="rounded border-gray-300 cursor-pointer"
+                      type="checkbox"
+                      bind:checked={currentUser.emailVisibility}
+                      class="rounded border-gray-400 cursor-pointer"
                 />
                 <span class="text-sm">Email Visible</span>
-                <span class="text-xs text-gray-500">(Whether other users can see this email)</span>
+                <span class="text-xs text-gray-500">(Whether others can see it)</span>
             </label>
 
             {#if currentUser.id}
-                <label class="flex items-center gap-2 cursor-pointer">
+                <label class="flex items-center gap-2 cursor-pointer text-gray-700">
                     <input
-                            type="checkbox"
-                            bind:checked={currentUser.verified}
-                            class="rounded border-gray-300 cursor-pointer"
+                          type="checkbox"
+                          bind:checked={currentUser.verified}
+                          class="rounded border-gray-400 cursor-pointer"
                     />
                     <span class="text-sm">Verified</span>
                     <span class="text-xs text-gray-500">(Email verification status)</span>
                 </label>
             {:else}
-                <p class="text-xs text-gray-500">New users need to verify their email after creation</p>
+                <p class="text-xs text-gray-500">New users must verify email later</p>
             {/if}
         </div>
 
         <!-- Roles -->
         <div use:permission={"sys:user:role"} class="space-y-1">
-            <label class="block text-sm font-medium mb-1">Roles</label>
-            <div class="border rounded px-3 py-2 min-h-[100px] focus-within:ring-2 focus-within:ring-blue-500">
+            <label class="block text-sm font-medium mb-1 text-gray-700">Roles</label>
+
+            <div class="border border-gray-400 rounded px-3 py-2 min-h-[100px]
+                        focus-within:ring-2 focus-within:ring-gray-700">
+
                 {#if selectedRoles.length > 0}
                     <div class="flex flex-wrap gap-1 mb-2">
                         {#each selectedRoles as r (r.id)}
-                            <span class="flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">
+                            <span class="flex items-center bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
                                 {r.roleName}
                                 <button
-                                        type="button"
-                                        class="ml-1 hover:text-blue-900 font-bold"
-                                        on:click={() => removeRole(r.id)}
+                                      type="button"
+                                      class="ml-1 hover:text-gray-900 font-bold"
+                                      on:click={() => removeRole(r.id)}
                                 >×</button>
                             </span>
                         {/each}
@@ -530,9 +548,10 @@
 
                 {#if allRoles.length > 0}
                     <select
-                            bind:value={roleSelectValue}
-                            on:change={(e) => addRole(e.target.value)}
-                            class="w-full border rounded px-2 py-1 focus:ring-0 focus:outline-none text-sm"
+                          bind:value={roleSelectValue}
+                          on:change={(e) => addRole(e.target.value)}
+                          class="w-full bg-gray-100 border border-gray-400 rounded-lg px-2 py-1
+                               text-sm text-gray-800 focus:border-gray-700 focus:ring-2 focus:ring-gray-700 focus:outline-none"
                     >
                         <option value="">Select role...</option>
                         {#each allRoles as role (role.id)}
@@ -548,20 +567,22 @@
         </div>
 
         <!-- Buttons -->
-        <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
+        <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-300">
             <button
-                    type="button"
-                    on:click={() => { showDialog = false; resetAvatarUpload(); }}
-                    class="px-4 py-2 border rounded hover:bg-gray-50 transition"
+                  type="button"
+                  on:click={() => { showDialog = false; resetAvatarUpload(); }}
+                  class="px-4 py-2 border border-gray-500 text-gray-700 rounded hover:bg-gray-100 transition"
             >
                 Cancel
             </button>
+
             <button
-                    type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                  type="submit"
+                  class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition"
             >
                 Save
             </button>
         </div>
+
     </form>
 </Drawer>

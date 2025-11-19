@@ -28,21 +28,30 @@
 <div class="drawer-panel">
     <!-- Header -->
     <div class="drawer-header">
-        <h3 class="title">{isEdit ? 'Edit Menu' : 'Add Menu'}</h3>
-        <button on:click={handleCancel} class="close-btn">✕</button>
+        <h3 class="title">{isEdit ? 'Edit menu record' : 'New menu record'}</h3>
+        <button on:click={handleCancel} class="close-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
     <!-- Content -->
     <div class="drawer-body">
 
         <div>
-            <label class="pb-label">Menu Name *</label>
-            <input class="pb-input" bind:value={menu.menuName}/>
+            <label class="pb-label">menuName <span class="text-red-500">*</span></label>
+            <input
+                  class="pb-input"
+                  bind:value={menu.menuName}
+                  placeholder="e.g., Dashboard, Users"
+            />
         </div>
 
         <div>
-            <label class="pb-label">Menu Type *</label>
+            <label class="pb-label">menuType <span class="text-red-500">*</span></label>
             <select bind:value={menu.menuType} class="pb-input">
+                <option value="">Select type...</option>
                 {#each menuTypeOptions as option}
                     <option value={option.value}>{option.label}</option>
                 {/each}
@@ -50,8 +59,9 @@
         </div>
 
         <div>
-            <label class="pb-label">Parent Menu</label>
+            <label class="pb-label">parentId</label>
             <select bind:value={menu.parentId} class="pb-input">
+                <option value="">-- Root --</option>
                 {#each parentOptions as option}
                     <option value={option.id} disabled={menu.id === option.id}>
                         {option.menuName}
@@ -61,25 +71,42 @@
         </div>
 
         <div>
-            <label class="pb-label">Icon</label>
-            <input class="pb-input" bind:value={menu.icon}/>
+            <label class="pb-label">icon</label>
+            <input
+                  class="pb-input"
+                  bind:value={menu.icon}
+                  placeholder="e.g., fa fa-home"
+            />
         </div>
 
         {#if menu.menuType !== 'F'}
             <div>
-                <label class="pb-label">Route Path</label>
-                <input class="pb-input" bind:value={menu.url}/>
+                <label class="pb-label">url</label>
+                <input
+                      class="pb-input"
+                      bind:value={menu.url}
+                      placeholder="/path/to/page"
+                />
             </div>
         {/if}
 
         <div>
-            <label class="pb-label">Permission</label>
-            <input class="pb-input" bind:value={menu.permission}/>
+            <label class="pb-label">permission</label>
+            <input
+                  class="pb-input"
+                  bind:value={menu.permission}
+                  placeholder="e.g., sys:menu:view"
+            />
         </div>
 
         <div>
-            <label class="pb-label">Sort Order</label>
-            <input class="pb-input" type="number" bind:value={menu.orderNum}/>
+            <label class="pb-label">orderNum</label>
+            <input
+                  class="pb-input"
+                  type="number"
+                  bind:value={menu.orderNum}
+                  placeholder="0"
+            />
         </div>
 
     </div>
@@ -87,19 +114,14 @@
     <!-- Footer -->
     <div class="drawer-footer">
         <button on:click={handleCancel} class="btn-cancel">Cancel</button>
-        <button on:click={handleSave} class="btn-primary">Save</button>
+        <button on:click={handleSave} class="btn-primary">Save changes</button>
     </div>
 </div>
 
 <style lang="postcss">
-    @reference "tailwindcss";
-
-    /* ------------------------------
-       遮罩：淡入淡出
-    ------------------------------ */
     .drawer-mask {
-        @apply fixed inset-0 bg-black/30 z-40;
-        animation: fadeIn 0.25s ease forwards;
+        @apply fixed inset-0 bg-black/20 z-40;
+        animation: fadeIn 0.2s ease;
     }
 
     @keyframes fadeIn {
@@ -111,17 +133,10 @@
         }
     }
 
-    /* ------------------------------
-       Drawer 右侧滑入
-       PocketBase 风格（直角 + 阴影）
-    ------------------------------ */
     .drawer-panel {
-        @apply fixed top-0 right-0 h-full w-[420px] bg-white
-        border-l border-gray-300 shadow-xl z-50
-        flex flex-col;
-
+        @apply fixed top-0 right-0 h-full w-[480px] bg-white shadow-2xl z-50 flex flex-col;
         transform: translateX(100%);
-        animation: slideIn 0.28s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        animation: slideIn 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
     }
 
     @keyframes slideIn {
@@ -129,54 +144,48 @@
             transform: translateX(100%);
         }
         to {
-            transform: translateX(0%);
+            transform: translateX(0);
         }
     }
 
-    /* ------------------------------ */
     .drawer-header {
-        @apply px-5 py-4 border-b border-gray-300 flex items-center justify-between;
+        @apply px-6 py-4 border-b border-gray-200 flex items-center justify-between;
     }
 
     .title {
-        @apply text-base font-semibold text-gray-800;
+        @apply text-base font-semibold text-gray-900;
     }
 
     .close-btn {
-        @apply text-gray-500 hover:text-gray-700 transition;
+        @apply text-gray-400 hover:text-gray-600 transition-colors;
     }
 
-    /* ------------------------------ */
     .drawer-body {
-        @apply flex-1 overflow-y-auto px-5 py-5 space-y-5;
+        @apply flex-1 overflow-y-auto px-6 py-5 space-y-5;
     }
 
-    /* label */
     .pb-label {
-        @apply text-sm font-medium text-gray-700;
+        @apply block text-xs font-medium text-gray-600 mb-1.5;
     }
 
-    /* PocketBase 风输入框：更硬朗 */
     .pb-input {
-        @apply w-full border border-gray-300 rounded-md px-3 py-2.5
-        bg-white text-gray-800
-        focus:border-gray-700 focus:ring-0
-        transition;
+        @apply w-full border border-gray-300 rounded px-3 py-2 text-sm
+        bg-white text-gray-900 placeholder-gray-400
+        focus:border-gray-500 focus:ring-1 focus:ring-gray-500 focus:outline-none
+        transition-colors;
     }
 
-    /* ------------------------------ */
     .drawer-footer {
-        @apply px-5 py-4 border-t border-gray-300 flex justify-end gap-2;
+        @apply px-6 py-4 border-t border-gray-200 flex justify-end gap-2;
     }
 
-    /* Buttons — 冷淡风 PocketBase */
     .btn-cancel {
-        @apply px-4 py-2 border border-gray-300 rounded-md
-        text-gray-700 bg-white hover:bg-gray-100 transition;
+        @apply px-4 py-2 border border-gray-300 rounded text-sm
+        text-gray-700 bg-white hover:bg-gray-50 transition-colors;
     }
 
     .btn-primary {
-        @apply px-4 py-2 bg-gray-800 text-white rounded-md
-        hover:bg-gray-700 transition;
+        @apply px-4 py-2 bg-gray-800 text-white rounded text-sm
+        hover:bg-gray-700 transition-colors;
     }
 </style>

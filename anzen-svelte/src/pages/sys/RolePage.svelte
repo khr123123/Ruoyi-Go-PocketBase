@@ -160,59 +160,83 @@
       on:sort={handleSort}
       on:pageChange={handlePageChange}
 />
-<Drawer show={showDialog} title={currentRole?.id ? 'Edit Role' : 'Add Role'} position="right"
+<Drawer show={showDialog} title={currentRole?.id ? 'Edit role record' : 'New role record'} position="right"
         on:close={() => showDialog=false}>
-    <div class="space-y-4">
+    <div class="space-y-5">
         <div>
-            <label class="block text-sm font-medium mb-1">Role Name *</label>
-            <input type="text" bind:value={currentRole.roleName} placeholder="Enter role name"
-                   class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                roleName <span class="text-red-500">*</span>
+            </label>
+            <input
+                  type="text"
+                  bind:value={currentRole.roleName}
+                  placeholder="e.g., Administrator, Editor"
+                  class="w-full bg-white border border-gray-300 rounded px-3 py-2 text-sm text-gray-900 placeholder-gray-400
+                       focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+            />
         </div>
-        <div class="flex justify-end gap-2 mt-4">
-            <button on:click={() => showDialog=false} class="px-4 py-2 border rounded hover:bg-gray-100 transition">
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-gray-200">
+            <button
+                  on:click={() => showDialog=false}
+                  class="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors">
                 Cancel
             </button>
-            <button on:click={saveRoleHandler}
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Save
+            <button
+                  on:click={saveRoleHandler}
+                  class="px-4 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-700 transition-colors">
+                Save changes
             </button>
         </div>
     </div>
 </Drawer>
 
-<Drawer show={showPermissionDialog} title={`Configure Permissions - ${currentRole?.roleName}`} position="right"
+<Drawer show={showPermissionDialog} title={`Permissions - ${currentRole?.roleName}`} position="right"
         width="600px" on:close={() => showPermissionDialog=false}>
-    <div class="space-y-2 max-h-[62vh] overflow-y-auto border rounded p-4">
-        {#each allMenus as menu}
-            <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                <input type="checkbox" checked={selectedPermissions.includes(menu.id)}
-                       on:change={() => togglePermission(menu.id)}
-                       class="rounded border-gray-300"/>
-                <span class="flex-1">
-                    {#if menu.icon}
-                        <i class="{menu.icon} mr-2 text-gray-600"></i>
+    <div class="space-y-4">
+        <div class="max-h-[calc(100vh-230px)] overflow-y-auto border border-gray-300 rounded bg-white">
+            {#each allMenus as menu}
+                <label
+                      class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                    <input
+                          type="checkbox"
+                          checked={selectedPermissions.includes(menu.id)}
+                          on:change={() => togglePermission(menu.id)}
+                          class="w-4 h-4 rounded border-gray-300 text-gray-800 focus:ring-gray-500"
+                    />
+                    <span class="flex-1 text-sm text-gray-900">
+                        {#if menu.icon}
+                            <i class="{menu.icon} mr-2 text-gray-500 text-xs"></i>
+                        {/if}
+                        {menu.menuName}
+                    </span>
+                    {#if menu.permission}
+                        <span class="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded">{menu.permission}</span>
                     {/if}
-                    {menu.menuName}
-                </span>
-                <span class="text-xs text-gray-500 font-mono">{menu.permission || '-'}</span>
-                <span class="text-xs px-2 py-1 rounded bg-gray-100">
-                    {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'MenuPage' : 'Button'}
-                </span>
-            </label>
-        {/each}
-    </div>
+                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        {menu.menuType === 'M' ? 'Dir' : menu.menuType === 'C' ? 'Page' : 'Btn'}
+                    </span>
+                </label>
+            {/each}
+        </div>
 
-    <div class="mt-4 p-3 bg-blue-50 rounded">
-        <p class="text-sm text-blue-800">
-            Selected: <strong>{selectedPermissions.length}</strong> permissions
-        </p>
-    </div>
+        <div class="px-4 py-3 bg-blue-50 rounded border border-blue-100">
+            <p class="text-sm text-blue-900">
+                Selected: <strong class="font-semibold">{selectedPermissions.length}</strong> permission(s)
+            </p>
+        </div>
 
-    <div class="flex justify-end gap-2 mt-4">
-        <button on:click={() => showPermissionDialog=false}
-                class="px-4 py-2 border rounded hover:bg-gray-100 transition">Cancel
-        </button>
-        <button on:click={savePermissionsHandler}
-                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Save Permissions
-        </button>
+        <div class="flex justify-end gap-2 pt-4 border-t border-gray-200">
+            <button
+                  on:click={() => showPermissionDialog=false}
+                  class="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors">
+                Cancel
+            </button>
+            <button
+                  on:click={savePermissionsHandler}
+                  class="px-4 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-700 transition-colors">
+                Save changes
+            </button>
+        </div>
     </div>
 </Drawer>
