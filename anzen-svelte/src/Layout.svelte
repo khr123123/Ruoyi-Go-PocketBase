@@ -221,7 +221,12 @@
         <!-- 顶部导航 -->
         <header class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
             <div class="flex items-center gap-2 text-[15px] py-3 text-gray-600">
-                <span>{$location.split("/")[1] || 'home'}</span>
+                {#if $location.split("/")[1]}
+                    <p class="text-gray-500 font-mono">{$location.split("/")[1]}</p>
+                {:else}
+                    <span class="font-semibold text-gray-900">Dashboard</span>
+                    <p class="text-gray-500 font-mono">PocketBase Admin Panel</p>
+                {/if}
                 {#if $location.split("/")[2]}
                     <span class="text-gray-300">/</span>
                     <span class="font-semibold text-gray-900">{$location.split("/")[2]}</span>

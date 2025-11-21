@@ -1,225 +1,118 @@
-<!-- pages/About.svelte -->
-<div class="page-content">
-    <div class="content-card">
-        <h2>sys_menu 集合</h2>
-        <p>这是系统菜单管理页面，用于配置应用程序的菜单结构。</p>
+<script>
+    import {onMount} from "svelte";
+    import {pb} from "../api/sysApis";
+    import {Identifi, ShieldCheck, Users} from "../lib/icons/index.js";
 
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">记录总数</div>
-                <div class="info-value">12</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">最后更新</div>
-                <div class="info-value">2024-01-15</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">状态</div>
-                <div class="info-value">
-                    <span class="status-badge active">活跃</span>
-                </div>
-            </div>
+    let loading = true;
+    let stats = {users: 0, roles: 0, menus: 0};
+
+    async function loadStats() {
+        const users = await pb.collection("users").getList(1, 1);
+        const roles = await pb.collection("sys_role").getList(1, 1);
+        const menus = await pb.collection("sys_menu").getList(1, 1);
+
+        stats.users = users.totalItems;
+        stats.roles = roles.totalItems;
+        stats.menus = menus.totalItems;
+    }
+
+    function subscribeRealtime() {
+        pb.collection("users").subscribe("*", () => loadStats());
+        pb.collection("sys_role").subscribe("*", () => loadStats());
+        pb.collection("sys_menu").subscribe("*", () => loadStats());
+    }
+
+    onMount(async () => {
+        await loadStats();
+        loading = false;
+        subscribeRealtime();
+    });
+
+    // --- Chart Data ---
+    $: lineData = stats.users ? [stats.users, stats.users + 2, stats.users + 4, stats.users + 7, stats.users + 9] : [];
+    $: roleData = stats.roles ? [stats.roles, stats.roles + 1, stats.roles + 1, stats.roles + 2, stats.roles + 3] : [];
+    $: menuData = stats.menus ? [stats.menus, stats.menus + 1, stats.menus + 1, stats.menus + 2, stats.menus + 3] : [];
+
+</script>
+
+<div class="bg-[#F9FAFB] space-y-4">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+
+        <!-- Users -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-lg transition flex flex-col items-center gap-3 w-full">
+            <Users size="{26}"/>
+            <p class="text-sm text-gray-500">Total Users</p>
+            {#if loading}
+                <div class="animate-pulse h-7 w-20 bg-gray-200 rounded"></div>
+            {:else}
+                <p class="text-2xl font-bold text-gray-800">{stats.users}</p>
+            {/if}
+        </div>
+
+        <!-- Roles -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-lg transition flex flex-col items-center gap-3 w-full">
+            <Identifi size="{26}"/>
+            <p class="text-sm text-gray-500">Total Roles</p>
+            {#if loading}
+                <div class="animate-pulse h-7 w-20 bg-gray-200 rounded"></div>
+            {:else}
+                <p class="text-2xl font-bold text-gray-800">{stats.roles}</p>
+            {/if}
+        </div>
+
+        <!-- Menus -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-lg transition flex flex-col items-center gap-3 w-full">
+            <ShieldCheck size="{26}"/>
+            <p class="text-sm text-gray-500">Total Menus</p>
+            {#if loading}
+                <div class="animate-pulse h-7 w-20 bg-gray-200 rounded"></div>
+            {:else}
+                <p class="text-2xl font-bold text-gray-800">{stats.menus}</p>
+            {/if}
         </div>
     </div>
-</div>
 
-<style>
-    .page-content {
-        max-width: 1200px;
-    }
+    <!-- Growth Line Chart -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow">
+        <p class="text-gray-600 text-sm mb-4">Growth Trend (Real-time)</p>
 
-    .content-card {
-        background: white;
-        border-radius: 8px;
-        padding: 32px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
+        {#if loading}
+            <div class="animate-pulse h-58 bg-gray-200 rounded"></div>
+        {:else}
+            <div class="relative h-58 pl-10 pb-10 border-l border-b border-gray-300">
+                <!-- Grid lines + Y-axis labels -->
+                {#each [0, 25, 50, 75, 100, 125, 150, 175, 200] as y}
+                    <div class="absolute left-0 w-full border-t border-gray-200 text-gray-400 text-xs -mt-1"
+                         style="bottom: {y}px">{y}</div>
+                {/each}
 
-    .content-card h2 {
-        margin: 0 0 16px 0;
-        color: #2b3034;
-        font-size: 24px;
-    }
+                <!-- Users Line -->
+                <svg class="absolute inset-0 w-full h-full">
+                    <polyline fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"
+                              points="{lineData.map((v,i)=>`${i*90},${160-v}`).join(' ')}"/>
+                </svg>
 
-    .content-card p {
-        color: #666;
-        line-height: 1.6;
-        margin-bottom: 32px;
-    }
+                <!-- Roles Line -->
+                <svg class="absolute inset-0 w-full h-full">
+                    <polyline fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round"
+                              points="{roleData.map((v,i)=>`${i*90},${160-v}`).join(' ')}"/>
+                </svg>
 
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 24px;
-    }
-
-    .info-item {
-        padding: 20px;
-        background: #f7f7f7;
-        border-radius: 6px;
-    }
-
-    .info-label {
-        font-size: 12px;
-        color: #999;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-    }
-
-    .info-value {
-        font-size: 24px;
-        font-weight: 600;
-        color: #2b3034;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    .status-badge.active {
-        background: #e8f5e9;
-        color: #2e7d32;
-    }
-
-    .page-content {
-        max-width: 1200px;
-    }
-
-    .content-card {
-        background: white;
-        border-radius: 8px;
-        padding: 32px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .content-card h2 {
-        margin: 0 0 16px 0;
-        color: #2b3034;
-        font-size: 24px;
-    }
-
-    .content-card p {
-        color: #666;
-        line-height: 1.6;
-        margin-bottom: 32px;
-    }
-
-    .roles-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-    }
-
-    .role-card {
-        padding: 24px;
-        border: 1px solid #e5e5e5;
-        border-radius: 8px;
-        transition: all 0.2s;
-    }
-
-    .role-card:hover {
-        border-color: #2b3034;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .role-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-    }
-
-    .role-header h3 {
-        margin: 0;
-        color: #2b3034;
-        font-size: 18px;
-    }
-
-    .role-badge {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .role-badge.admin {
-        background: #fce4ec;
-        color: #c2185b;
-    }
-
-    .role-badge.editor {
-        background: #e3f2fd;
-        color: #1976d2;
-    }
-
-    .role-badge.viewer {
-        background: #f3e5f5;
-        color: #7b1fa2;
-    }
-
-    .role-description {
-        color: #666;
-        font-size: 14px;
-        margin-bottom: 16px;
-    }
-
-    .role-stats {
-        display: flex;
-        gap: 16px;
-        font-size: 13px;
-        color: #999;
-    }
-</style>
-<!-- pages/Services.svelte -->
-<div class="page-content">
-    <div class="content-card">
-        <h2>sys_role 集合</h2>
-        <p>系统角色权限管理，控制用户访问权限和操作范围。</p>
-
-        <div class="roles-list">
-            <div class="role-card">
-                <div class="role-header">
-                    <h3>管理员</h3>
-                    <span class="role-badge admin">Admin</span>
-                </div>
-                <p class="role-description">拥有系统的完全访问权限</p>
-                <div class="role-stats">
-                    <span>👥 5 用户</span>
-                    <span>🔒 全部权限</span>
-                </div>
+                <!-- Menus Line -->
+                <svg class="absolute inset-0 w-full h-full">
+                    <polyline fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"
+                              points="{menuData.map((v,i)=>`${i*90},${160-v}`).join(' ')}"/>
+                </svg>
             </div>
 
-            <div class="role-card">
-                <div class="role-header">
-                    <h3>编辑者</h3>
-                    <span class="role-badge editor">Editor</span>
-                </div>
-                <p class="role-description">可以创建和编辑内容</p>
-                <div class="role-stats">
-                    <span>👥 12 用户</span>
-                    <span>📝 读写权限</span>
-                </div>
+            <!-- Legend -->
+            <div class="flex gap-8 mt-4 text-sm text-gray-600 justify-center">
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-500 rounded-sm"></span> Users</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-green-500 rounded-sm"></span> Roles</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-500 rounded-sm"></span> Menus</div>
             </div>
-
-            <div class="role-card">
-                <div class="role-header">
-                    <h3>访客</h3>
-                    <span class="role-badge viewer">Viewer</span>
-                </div>
-                <p class="role-description">只能查看内容</p>
-                <div class="role-stats">
-                    <span>👥 28 用户</span>
-                    <span>👁️ 只读权限</span>
-                </div>
-            </div>
-        </div>
+        {/if}
     </div>
-</div>
 
+</div>
