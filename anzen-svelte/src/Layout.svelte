@@ -11,6 +11,7 @@
     import {slide} from 'svelte/transition';
     import active from 'svelte-spa-router/active';
     import MegaphonePage from "./pages/MegaphonePage.svelte";
+    import HomePage from "./pages/HomePage.svelte";
 
     const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
@@ -25,8 +26,9 @@
 
     function generateRoutes(menuData) {
         const routes = {
-            '/about': wrap({component: About}),
+            '/': wrap({component: HomePage}),
             '/megaphone': wrap({component: MegaphonePage}),
+            '/about': wrap({component: About}),
         };
         if (!menuData) return routes;
 
@@ -90,7 +92,9 @@
         <div class="p-4 border-b border-gray-200">
             <div class="flex items-center justify-center mb-3 text-gray-800">
                 <img src="../public/logo.jpg" alt="RY" class="w-12 rounded-sm">
-                <span class="ml-2 text-lg font-mono tracking-wide">RUOYI-PB</span>
+                <a class="ml-2 text-lg font-mono tracking-wide hover:bg-gray-100 transition cursor-pointer"
+                   href="/" use:link>RUOYI-PB
+                </a>
             </div>
 
             <div class="relative">
