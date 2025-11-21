@@ -31,3 +31,4 @@ export {default as X} from './X.svelte';
 export {default as Next} from './Next.svelte';
 export {default as Prev} from './Prev.svelte';
 export {default as ChevronRight} from './ChevronRight.svelte';
+export {default as Megaphone} from './Megaphone.svelte';

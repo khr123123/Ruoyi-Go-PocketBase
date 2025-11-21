@@ -3,13 +3,14 @@
     import {wrap} from "svelte-spa-router/wrap";
     import About from './pages/About.svelte';
     import * as Icons from './lib/icons/index.js';
-    import {Settings, SettingsAlt} from './lib/icons/index.js';
+    import {Megaphone, Settings, SettingsAlt} from './lib/icons/index.js';
     import {clearUser, user} from './stores/userStore.js';
     import {showToast} from './stores/toastStore.js';
     import {clearPermissions, myRouter} from './stores/authStore.js';
     import {logout} from "./api/sysApis.js";
     import {slide} from 'svelte/transition';
     import active from 'svelte-spa-router/active';
+    import MegaphonePage from "./pages/MegaphonePage.svelte";
 
     const AVATAR_PREFIX = "http://127.0.0.1:8090/api/files/_pb_users_auth_/";
 
@@ -25,6 +26,7 @@
     function generateRoutes(menuData) {
         const routes = {
             '/about': wrap({component: About}),
+            '/megaphone': wrap({component: MegaphonePage}),
         };
         if (!menuData) return routes;
 
@@ -173,12 +175,21 @@
             <div class="mt-4 pt-3 border-t border-gray-200 space-y-1">
                 <div class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">System</div>
                 <a
+                      href="/megaphone"
+                      use:link
+                      use:active={{ path: "/megaphone", className: 'bg-gray-100' }}
+                      class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all hover:bg-gray-100"
+                >
+                    <Megaphone size={16} className="text-black"/>
+                    <span class="truncate">Megaphone</span>
+                </a>
+                <a
                       href="/about"
                       use:link
                       use:active={{ path: "/about", className: 'bg-gray-100' }}
                       class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all hover:bg-gray-100"
                 >
-                    <Settings size={16}  className="text-black"/>
+                    <Settings size={16} className="text-black"/>
                     <span class="truncate">About</span>
                 </a>
             </div>
